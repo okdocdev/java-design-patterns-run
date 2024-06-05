@@ -1,5 +1,5 @@
 # About reader-writer-lock > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: https://github.com/iluwatar/java-design-patterns (20240509-113340 bf6456ba6), path: java-design-patterns/reader-writer-lock
+Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/reader-writer-lock
 
 You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:reader-writer-lock/index.html), here is a screenshot:
 ![okdoc.dev:JDP@20240509:reader-writer-lock](screenshot.okdoc.dev.jpg)
@@ -20,5 +20,5 @@ This site allows developers to view the entire process and details of the progra
 If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
 如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523/index.html) ！
+Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
+快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！

@@ -1,5 +1,5 @@
 # About java-design-patterns-run
-java-design-patterns-run is the runtime view of java-design-patterns: you can view a design pattern's code flow in its debugging process at [okdoc.dev](https://okdoc.dev/en/index.html#JavaDesignPatterns), here is a demo screenshot:
+<b>java-design-patterns-run</b> is the runtime view of java-design-patterns: you can view a design pattern's code flow in its debugging process at [okdoc.dev](https://okdoc.dev/en/index.html#JavaDesignPatterns), here is a demo screenshot:
 ![JDP@20240509:reader-writer-lock](reader-writer-lock.screenshot.okdoc.dev.jpg)
 
 # About okdoc.dev
@@ -18,5 +18,5 @@ This site allows developers to view the entire process and details of the progra
 If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
 如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523/index.html) ！
+Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
+快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
