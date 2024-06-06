@@ -4,7 +4,7 @@
 
 The complete code flow of [reader-writer-lock](https://github.com/okdocdev/java-design-patterns-run/reader-writer-lock/) starts [here](https://okdoc.dev/p/JDP@20240509:reader-writer-lock/), just enjoy it:)
 
-# About okdoc.dev
+# About the website: [okdoc.dev](https://okdoc.dev/)
 As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
 随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
 
