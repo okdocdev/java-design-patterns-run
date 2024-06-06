@@ -1,24 +1,116 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Client Session
+category: Behavioral
+language: en
+tags:
+    - Session management
+    - Web development
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* User session
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Client Session design pattern aims to maintain a user's state and data across multiple requests within a web application, ensuring a continuous and personalized user experience.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real-World Example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> You're looking to create a data management app allowing users to send requests to the server to modify and make changes to data stored on their devices. These requests are small and the data is individual to each user, negating the need for a large scale database implementation. Using the client session pattern, you are able to handle multiple concurrent requests, load balancing clients across different servers with ease due to servers remaining stateless. You also remove the need to store session IDs on the server side due to clients providing all the information that a server needs to perform their process.
+
+In Plain words
+
+> Instead of storing information about the current client and the information being accessed on the server, it is maintained client side only. Client has to send session data with each request to the server and has to send an updated state back to the client, which is stored on the clients machine. The server doesn't have to store the client information. ([ref](https://dzone.com/articles/practical-php-patterns/practical-php-patterns-client))
+
+**Programmatic Example**
+
+Here is the sample code to describe the client-session pattern. In the below code we are first creating an instance of the Server. This server instance will then be used to get Session objects for two clients. As you can see from the code below the Session object can be used to store any relevant information that are required by the server to process the client request. These session objects will then be passed on with every Request to the server. The Request will have the Session object that stores the relevant client details along with the required data for processing the request. The session information in every request helps the server identify the client and process the request accordingly.
+
+```java
+public class App {
+
+    public static void main(String[] args) {
+        var server = new Server("localhost", 8080);
+        var session1 = server.getSession("Session1");
+        var session2 = server.getSession("Session2");
+        var request1 = new Request("Data1", session1);
+        var request2 = new Request("Data2", session2);
+        server.process(request1);
+        server.process(request2);
+    }
+}
+
+@Data
+@AllArgsConstructor
+public class Session {
+
+    /**
+     * Session id.
+     */
+    private String id;
+
+    /**
+     * Client name.
+     */
+    private String clientName;
+
+}
+
+@Data
+@AllArgsConstructor
+public class Request {
+
+    private String data;
+
+    private Session session;
+
+}
+```
+
+## Architecture Diagram
+
+![alt text](./etc/session_state_pattern.png "Session State Pattern")
+
+## Applicability
+
+Use the client state pattern when:
+
+* Web applications requiring user authentication and authorization.
+* Applications needing to track user activities and preferences over multiple requests or visits.
+* Systems where server resources need to be optimized by offloading state management to the client side.
+
+## Known Uses
+
+* E-commerce websites to track shopping cart contents across sessions.
+* Online platforms that offer personalized content based on user preferences and history.
+* Web applications requiring user login to access personalized or secured content.
+
+## Consequences
+
+Benefits:
+
+* Improved server performance by reducing the need to store user state on the server.
+* Enhanced user experience through personalized content and seamless navigation across different parts of the application.
+* Flexibility in managing sessions through various client-side storage mechanisms (e.g., cookies, Web Storage API).
+
+Trade-offs:
+
+* Potential security risks if sensitive information is stored in client sessions without proper encryption and validation.
+* Dependence on client-side capabilities and settings, such as cookie policies, which can vary across browsers and user configurations.
+* Increased complexity in session management logic, especially in handling session expiration, renewal, and synchronization across multiple devices or tabs.
+
+## Related Patterns
+
+* Server Session: Often used in conjunction with the Client Session pattern to provide a balance between client-side efficiency and server-side control.
+* [Singleton](https://java-design-patterns.com/patterns/singleton/): Ensuring a single instance of a user's session throughout the application.
+* [State](https://java-design-patterns.com/patterns/state/): Managing state transitions in a session, such as authenticated, guest, or expired states.
+
+## Credits
+
+* [DZone - Practical PHP patterns](https://dzone.com/articles/practical-php-patterns/practical-php-patterns-client)
+* [Client Session State Design Pattern - Ram N Java](https://www.youtube.com/watch?v=ycOSj9g41pc)
+* [Professional Java for Web Applications](https://amzn.to/4aazY59)
+* [Securing Web Applications with Spring Security](https://amzn.to/3PCCEA1)

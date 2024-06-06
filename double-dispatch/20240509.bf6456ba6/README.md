@@ -1,24 +1,110 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Double Dispatch
+category: Behavioral
+language: en
+tag:
+    - Polymorphism
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Multi-methods
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Double Dispatch pattern is used to achieve dynamic polymorphism based on the types of two objects involved in a method call. It allows method behavior to be different based on the combination of the runtime types of both the object on which the method is called and the object being passed as a parameter.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> In a logistics company, different types of delivery vehicles like trucks, drones, and bikes interact with various types of packages (fragile, oversized, standard). The Double Dispatch design pattern is used to determine the optimal delivery method: trucks might handle oversized items, drones for quick deliveries of light packages, and bikes for urban areas. Each vehicle-package combination results in a different handling and delivery strategy, dynamically determined at runtime based on the types of both the vehicle and the package.
+
+In plain words
+
+> The Double Dispatch design pattern allows a program to select a different function to execute based on the types of two objects involved in a call, enhancing flexibility in handling interactions between them.
+
+Wikipedia says
+
+> In software engineering, double dispatch is a special form of multiple dispatch, and a mechanism that dispatches a function call to different concrete functions depending on the runtime types of two objects involved in the call. In most object-oriented systems, the concrete function that is called from a function call in the code depends on the dynamic type of a single object and therefore they are known as single dispatch calls, or simply virtual function calls.
+
+**Programmatic Example**
+
+The Double Dispatch pattern is used to handle collisions between different types of game objects. Each game object is an instance of a class that extends the GameObject abstract class. The GameObject class has a collision(GameObject) method, which is overridden in each subclass to define the behavior when a collision occurs with another game object.  Here is a simplified version of the GameObject class and its subclasses:
+
+```java
+public abstract class GameObject {
+  // Other properties and methods...
+
+  public abstract void collision(GameObject gameObject);
+}
+
+public class FlamingAsteroid extends GameObject {
+  // Other properties and methods...
+
+  @Override
+  public void collision(GameObject gameObject) {
+    gameObject.collisionWithFlamingAsteroid(this);
+  }
+}
+
+public class SpaceStationMir extends GameObject {
+  // Other properties and methods...
+
+  @Override
+  public void collision(GameObject gameObject) {
+    gameObject.collisionWithSpaceStationMir(this);
+  }
+}
+```
+
+In the App class, the Double Dispatch pattern is used to check for collisions between all pairs of game objects:
+
+```java
+objects.forEach(o1 -> objects.forEach(o2 -> {
+  if (o1 != o2 && o1.intersectsWith(o2)) {
+    o1.collision(o2);
+  }
+}));
+```
+
+When a collision is detected between two objects, the collision(GameObject) method is called on the first object (o1) with the second object (o2) as the argument. This method call is dispatched at runtime to the appropriate collision(GameObject) method in the class of o1. Inside this method, another method call gameObject.collisionWithX(this) is made on o2 (where X is the type of o1), which is dispatched at runtime to the appropriate collisionWithX(GameObject) method in the class of o2. This is the "double dispatch" - two method calls are dispatched at runtime based on the types of two objects.
+
+## Class diagram
+
+![Double Dispatch](./etc/double-dispatch.png "Double Dispatch")
+
+## Applicability
+
+* When the behavior of a method needs to vary not just based on the object it is called on, but also based on the type of the argument.
+* In scenarios where if-else or switch-case type checks against the type of objects are cumbersome and not scalable.
+* When implementing operations in domain classes without contaminating their code with complex decision-making logic about other domain classes.
+
+## Known Uses
+
+* Graphical user interfaces where different actions are taken based on different types of mouse events interacting with different types of elements.
+* Simulation systems where interactions between different types of objects need to trigger distinct behaviors.
+
+## Consequences
+
+Benefits:
+
+* Increases the flexibility of code by handling interaction between objects in a manner that is easy to understand and maintain.
+* Helps in adhering to the [Open/Closed Principle](https://java-design-patterns.com/principles/#open-closed-principle) by allowing new classes to be introduced without modifying existing classes.
+
+Trade-offs:
+
+* Can lead to more complex code structures, especially in languages like Java that do not support this pattern natively.
+* May require additional effort in maintaining and extending as new classes are added.
+
+## Related Patterns
+
+* [Strategy](https://java-design-patterns.com/patterns/strategy/): Similar in intent where it's used to choose an algorithm at runtime, though Strategy focuses on single object context rather than interactions between multiple objects.
+* [Visitor](https://java-design-patterns.com/patterns/visitor/): Often used together with Double Dispatch to encapsulate operations performed on a set of element objects.
+
+## Real world examples
+
+* [Design Patterns: Elements of Reusable Object-Oriented Software](https://amzn.to/4awj7cV)
+* [Java Design Pattern Essentials](https://amzn.to/3Jg8ZZV)
+* [Refactoring to Patterns](https://amzn.to/3vRBJ8k)
+* [ObjectOutputStream](https://docs.oracle.com/javase/8/docs/api/java/io/ObjectOutputStream.html)

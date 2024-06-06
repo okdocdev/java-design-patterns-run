@@ -1,24 +1,214 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Composite
+category: Structural
+language: en
+tag:
+    - Gang of Four
+    - Object composition
+    - Recursion
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Object Tree
+* Composite Structure
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+Compose objects into tree structures to represent part-whole hierarchies. Composite lets clients treat individual objects and compositions of objects uniformly.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real-world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> Every sentence is composed of words which are in turn composed of characters. Each of these objects are printable and they can have something printed before or after them like sentence always ends with full stop and word always has space before it.
+
+In plain words
+
+> Composite pattern lets clients uniformly treat the individual objects.
+
+Wikipedia says
+
+> In software engineering, the composite pattern is a partitioning design pattern. The composite pattern describes that a group of objects is to be treated in the same way as a single instance of an object. The intent of a composite is to "compose" objects into tree structures to represent part-whole hierarchies. Implementing the composite pattern lets clients treat individual objects and compositions uniformly.
+
+**Programmatic Example**
+
+Taking our sentence example from above. Here we have the base class `LetterComposite` and the different printable types `Letter`, `Word` and `Sentence`.
+
+```java
+public abstract class LetterComposite {
+
+    private final List<LetterComposite> children = new ArrayList<>();
+
+    public void add(LetterComposite letter) {
+        children.add(letter);
+    }
+
+    public int count() {
+        return children.size();
+    }
+
+    protected void printThisBefore() {
+    }
+
+    protected void printThisAfter() {
+    }
+
+    public void print() {
+        printThisBefore();
+        children.forEach(LetterComposite::print);
+        printThisAfter();
+    }
+}
+
+public class Letter extends LetterComposite {
+
+    private final char character;
+
+    public Letter(char c) {
+        this.character = c;
+    }
+
+    @Override
+    protected void printThisBefore() {
+        System.out.print(character);
+    }
+}
+
+public class Word extends LetterComposite {
+
+    public Word(List<Letter> letters) {
+        letters.forEach(this::add);
+    }
+
+    public Word(char... letters) {
+        for (char letter : letters) {
+            this.add(new Letter(letter));
+        }
+    }
+
+    @Override
+    protected void printThisBefore() {
+        System.out.print(" ");
+    }
+}
+
+public class Sentence extends LetterComposite {
+
+    public Sentence(List<Word> words) {
+        words.forEach(this::add);
+    }
+
+    @Override
+    protected void printThisAfter() {
+        System.out.print(".");
+    }
+}
+```
+
+Then we have a messenger to carry messages:
+
+```java
+public class Messenger {
+
+    LetterComposite messageFromOrcs() {
+
+        var words = List.of(
+                new Word('W', 'h', 'e', 'r', 'e'),
+                new Word('t', 'h', 'e', 'r', 'e'),
+                new Word('i', 's'),
+                new Word('a'),
+                new Word('w', 'h', 'i', 'p'),
+                new Word('t', 'h', 'e', 'r', 'e'),
+                new Word('i', 's'),
+                new Word('a'),
+                new Word('w', 'a', 'y')
+        );
+
+        return new Sentence(words);
+
+    }
+
+    LetterComposite messageFromElves() {
+
+        var words = List.of(
+                new Word('M', 'u', 'c', 'h'),
+                new Word('w', 'i', 'n', 'd'),
+                new Word('p', 'o', 'u', 'r', 's'),
+                new Word('f', 'r', 'o', 'm'),
+                new Word('y', 'o', 'u', 'r'),
+                new Word('m', 'o', 'u', 't', 'h')
+        );
+
+        return new Sentence(words);
+
+    }
+
+}
+```
+
+And then it can be used as:
+
+```java
+var messenger=new Messenger();
+
+        LOGGER.info("Message from the orcs: ");
+        messenger.messageFromOrcs().print();
+
+        LOGGER.info("Message from the elves: ");
+        messenger.messageFromElves().print();
+```
+
+The console output:
+
+```
+Message from the orcs: 
+ Where there is a whip there is a way.
+Message from the elves: 
+ Much wind pours from your mouth.
+```
+
+## Class diagram
+
+![alt text](./etc/composite.urm.png "Composite class diagram")
+
+## Applicability
+
+Use the Composite pattern when
+
+* You want to represent part-whole hierarchies of objects.
+* You want clients to be able to ignore the difference between compositions of objects and individual objects. Clients will treat all objects in the composite structure uniformly.
+
+## Known uses
+
+* Graphical user interfaces where components can contain other components (e.g., panels containing buttons, labels, other panels).
+* File system representations where directories can contain files and other directories.
+* Organizational structures where a department can contain sub-departments and employees.
+* [java.awt.Container](http://docs.oracle.com/javase/8/docs/api/java/awt/Container.html) and [java.awt.Component](http://docs.oracle.com/javase/8/docs/api/java/awt/Component.html)
+* [Apache Wicket](https://github.com/apache/wicket) component tree, see [Component](https://github.com/apache/wicket/blob/91e154702ab1ff3481ef6cbb04c6044814b7e130/wicket-core/src/main/java/org/apache/wicket/Component.java) and [MarkupContainer](https://github.com/apache/wicket/blob/b60ec64d0b50a611a9549809c9ab216f0ffa3ae3/wicket-core/src/main/java/org/apache/wicket/MarkupContainer.java)
+
+## Consequences
+
+Benefits:
+
+* Simplifies client code, as it can treat composite structures and individual objects uniformly.
+* Makes it easier to add new kinds of components, as existing code doesn't need to be changed.
+
+Trade-offs:
+
+* Can make the design overly general. It might be difficult to restrict the components of a composite.
+* Can make it harder to restrict the types of components in a composite.
+
+## Related Patterns
+
+* [Flyweight](https://java-design-patterns.com/patterns/flyweight/): Composite can use Flyweight to share component instances among several composites.
+* [Iterator](https://java-design-patterns.com/patterns/iterator/): Can be used to traverse Composite structures.
+* [Visitor](https://java-design-patterns.com/patterns/visitor/): Can apply an operation over a Composite structure.
+
+## Credits
+
+* [Design Patterns: Elements of Reusable Object-Oriented Software](https://www.amazon.com/gp/product/0201633612/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0201633612&linkCode=as2&tag=javadesignpat-20&linkId=675d49790ce11db99d90bde47f1aeb59)
+* [Head First Design Patterns: A Brain-Friendly Guide](https://www.amazon.com/gp/product/0596007124/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0596007124&linkCode=as2&tag=javadesignpat-20&linkId=6b8b6eea86021af6c8e3cd3fc382cb5b)
+* [Refactoring to Patterns](https://www.amazon.com/gp/product/0321213351/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0321213351&linkCode=as2&tag=javadesignpat-20&linkId=2a76fcb387234bc71b1c61150b3cc3a7)
+* [Pattern-Oriented Software Architecture, Volume 1: A System of Patterns](https://amzn.to/3xoLAmi)
+* [Patterns of Enterprise Application Architecture](https://amzn.to/3vBKXWb)

@@ -1,24 +1,171 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Context Object
+category: Behavioral
+language: en
+tags:
+    - Context
+    - Decoupling
+    - Encapsulation
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Context
+* Context Encapsulation
+* Context Holder
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+Encapsulate the context (state and behaviors) relevant to the user or the request being processed in order to decouple application components from the complexities of the environment.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real-world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> This application has different layers labelled A, B and C with each extracting specific information from a similar context for further use in the software. Passing down each pieces of information individually would be inefficient, a method to efficiently store and pass information is needed.
+
+In plain words
+
+> Create an object to store the context data and pass it where needed.
+
+[Core J2EE Patterns](http://corej2eepatterns.com/ContextObject.htm) says
+
+> Use a Context Object to encapsulate state in a protocol-independent way to be shared throughout your application.
+
+**Programmatic Example**
+
+Define the data that the service context object contains.
+
+```Java
+@Getter
+@Setter
+public class ServiceContext {
+
+    String accountService;
+    String sessionService;
+    String searchService;
+}
+```
+
+Create an interface used in parts of the application for context objects to be created.
+
+```Java
+public class ServiceContextFactory {
+
+    public static ServiceContext createContext() {
+        return new ServiceContext();
+    }
+}
+```
+
+Instantiate the context object in the first layer. The adjoining layer calls the context in the current layer, which then further structures the object.
+
+```Java
+@Getter
+public class LayerA {
+
+    private static ServiceContext context;
+
+    public LayerA() {
+        context = ServiceContextFactory.createContext();
+    }
+
+    public void addAccountInfo(String accountService) {
+        context.setACCOUNT_SERVICE(accountService);
+    }
+}
+
+@Getter
+public class LayerB {
+
+    private static ServiceContext context;
+
+    public LayerB(LayerA layerA) {
+        this.context = layerA.getContext();
+    }
+
+    public void addSessionInfo(String sessionService) {
+        context.setSESSION_SERVICE(sessionService);
+    }
+}
+
+@Getter
+public class LayerC {
+
+    public static ServiceContext context;
+
+    public LayerC(LayerB layerB) {
+        this.context = layerB.getContext();
+    }
+
+    public void addSearchInfo(String searchService) {
+        context.setSEARCH_SERVICE(searchService);
+    }
+}
+```
+
+Here is the context object and layers in action.
+
+```Java
+var layerA=new LayerA();
+        layerA.addAccountInfo(SERVICE);
+        LOGGER.info("Context = {}",layerA.getContext());
+        var layerB=new LayerB(layerA);
+        layerB.addSessionInfo(SERVICE);
+        LOGGER.info("Context = {}",layerB.getContext());
+        var layerC=new LayerC(layerB);
+        layerC.addSearchInfo(SERVICE);
+        LOGGER.info("Context = {}",layerC.getContext());
+```
+
+Program output:
+
+```Java
+Context=SERVICE null null
+        Context=SERVICE SERVICE null
+        Context=SERVICE SERVICE SERVICE
+```
+
+## Class diagram
+
+![alt text](./etc/context-object.png "Context object")
+
+## Applicability
+
+* When there is a need to abstract and encapsulate context information from different parts of an application to avoid cluttering the business logic with environment-specific code.
+* In web applications, to encapsulate request-specific information and make it easily accessible throughout the application without passing it explicitly between functions or components.
+* In distributed systems, to encapsulate contextual information about the task being performed, user preferences, or security credentials, facilitating their propagation across different components and services.
+
+## Known uses
+
+* Web application frameworks often implement a Context Object to encapsulate HTTP request and response objects, session information, and other request-specific data.
+* Enterprise applications use Context Objects to manage and propagate transactional information, security credentials, and user-specific settings across different layers and services.
+* [Spring: ApplicationContext](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/context/ApplicationContext.html)
+* [Oracle: SecurityContext](https://docs.oracle.com/javaee/7/api/javax/ws/rs/core/SecurityContext.html)
+* [Oracle: ServletContext](https://docs.oracle.com/javaee/6/api/javax/servlet/ServletContext.html)
+
+## Consequences
+
+Benefits:
+
+* Decoupling: Components and services are decoupled from the specificities of the execution environment, enhancing modularity and maintainability.
+* Centralization: Contextual information is centralized in one place, making it easier to manage, access, and debug.
+* Flexibility: The pattern allows for flexible and dynamic context management, which can adapt to changes in the environment or requirements.
+
+Trade-offs:
+
+* Overhead: Introducing a Context Object can add overhead in terms of performance, especially if not implemented efficiently.
+* Complexity: If the Context Object is not well-designed, it can become a bloated and complex monolith, difficult to manage and understand.
+
+## Related Patterns
+
+* [Singleton](https://java-design-patterns.com/patterns/singleton/): The Context Object is often implemented as a Singleton to ensure a global point of access.
+* [Strategy](https://java-design-patterns.com/patterns/strategy/): Context Objects can use Strategies to adapt their behavior based on the context they encapsulate.
+* [Decorator](https://java-design-patterns.com/patterns/decorator/): Can be used to dynamically add responsibilities to the Context Object.
+
+## Credits
+
+* [Core J2EE Design Patterns](https://amzn.to/3IhcY9w)
+* [Core J2EE Design Patterns website - Context Object](http://corej2eepatterns.com/ContextObject.htm)
+* [Allan Kelly - The Encapsulate Context Pattern](https://accu.org/journals/overload/12/63/kelly_246/)
+* [Arvid S. Krishna et al. - Context Object](https://www.dre.vanderbilt.edu/~schmidt/PDF/Context-Object-Pattern.pdf)

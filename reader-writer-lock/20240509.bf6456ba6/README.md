@@ -230,7 +230,7 @@ public class ReadWriteLock implements ReaderWriterLock {
 
 
 ## Class diagram
-![alt text](./etc/.png "Reader writer lock")
+![alt text](./etc/reader-writer-lock.png "Reader writer lock")
 
 ## Applicability  
 

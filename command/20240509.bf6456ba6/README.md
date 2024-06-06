@@ -1,24 +1,243 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Command
+category: Behavioral
+language: en
+tag:
+    - Gang of Four
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Action
+* Transaction
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Command design pattern encapsulates a request as an object, thereby allowing for parameterization of clients with queues, requests, and operations. It also allows for the support of undoable operations.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real-world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> There is a wizard casting spells on a goblin. The spells are executed on the goblin one by one. The first spell shrinks the goblin and the second makes him invisible. Then the wizard reverses the spells one by one. Each spell here is a command object that can be undone.
+
+In plain words
+
+> Storing requests as command objects allows performing an action or undoing it at a later time.
+
+Wikipedia says
+
+> In object-oriented programming, the command pattern is a behavioral design pattern in which an object is used to encapsulate all information needed to perform an action or trigger an event at a later time.
+
+**Programmatic Example**
+
+Here's the sample code with wizard and goblin. Let's start from the `Wizard` class.
+
+```java
+
+@Slf4j
+public class Wizard {
+
+    private final Deque<Runnable> undoStack = new LinkedList<>();
+    private final Deque<Runnable> redoStack = new LinkedList<>();
+
+    public Wizard() {
+    }
+
+    public void castSpell(Runnable runnable) {
+        runnable.run();
+        undoStack.offerLast(runnable);
+    }
+
+    public void undoLastSpell() {
+        if (!undoStack.isEmpty()) {
+            var previousSpell = undoStack.pollLast();
+            redoStack.offerLast(previousSpell);
+            previousSpell.run();
+        }
+    }
+
+    public void redoLastSpell() {
+        if (!redoStack.isEmpty()) {
+            var previousSpell = redoStack.pollLast();
+            undoStack.offerLast(previousSpell);
+            previousSpell.run();
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "Wizard";
+    }
+}
+```
+
+Next, we have the goblin who's the target of the spells.
+
+```java
+
+@Slf4j
+public abstract class Target {
+
+    private Size size;
+
+    private Visibility visibility;
+
+    public Size getSize() {
+        return size;
+    }
+
+    public void setSize(Size size) {
+        this.size = size;
+    }
+
+    public Visibility getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(Visibility visibility) {
+        this.visibility = visibility;
+    }
+
+    @Override
+    public abstract String toString();
+
+    public void printStatus() {
+        LOGGER.info("{}, [size={}] [visibility={}]", this, getSize(), getVisibility());
+    }
+}
+
+public class Goblin extends Target {
+
+    public Goblin() {
+        setSize(Size.NORMAL);
+        setVisibility(Visibility.VISIBLE);
+    }
+
+    @Override
+    public String toString() {
+        return "Goblin";
+    }
+
+    public void changeSize() {
+        var oldSize = getSize() == Size.NORMAL ? Size.SMALL : Size.NORMAL;
+        setSize(oldSize);
+    }
+
+    public void changeVisibility() {
+        var visible = getVisibility() == Visibility.INVISIBLE
+                ? Visibility.VISIBLE : Visibility.INVISIBLE;
+        setVisibility(visible);
+    }
+}
+```
+
+Finally, we have the wizard in the main function casting spells.
+
+```java
+public static void main(String[]args){
+        var wizard=new Wizard();
+        var goblin=new Goblin();
+
+        // casts shrink/unshrink spell
+        wizard.castSpell(goblin::changeSize);
+
+        // casts visible/invisible spell
+        wizard.castSpell(goblin::changeVisibility);
+
+        // undo and redo casts
+        wizard.undoLastSpell();
+        wizard.redoLastSpell();
+```
+
+Here's the whole example in action.
+
+```java
+var wizard=new Wizard();
+        var goblin=new Goblin();
+
+        goblin.printStatus();
+        wizard.castSpell(goblin::changeSize);
+        goblin.printStatus();
+
+        wizard.castSpell(goblin::changeVisibility);
+        goblin.printStatus();
+
+        wizard.undoLastSpell();
+        goblin.printStatus();
+
+        wizard.undoLastSpell();
+        goblin.printStatus();
+
+        wizard.redoLastSpell();
+        goblin.printStatus();
+
+        wizard.redoLastSpell();
+        goblin.printStatus();
+```
+
+Here's the program output:
+
+```java
+Goblin,[size=normal][visibility=visible]
+        Goblin,[size=small][visibility=visible]
+        Goblin,[size=small][visibility=invisible]
+        Goblin,[size=small][visibility=visible]
+        Goblin,[size=normal][visibility=visible]
+        Goblin,[size=small][visibility=visible]
+        Goblin,[size=small][visibility=invisible]
+```
+
+## Class diagram
+
+![alt text](./etc/command.png "Command")
+
+## Applicability
+
+Use the Command pattern when you want to:
+
+* Parameterize objects by an action to perform. You can express such parameterization in a procedural language with a callback function, that is, a function that's registered somewhere to be called at a later point. Commands are an object-oriented replacement for callbacks.
+* Specify, queue, and execute requests at different times. A Command object can have a life independent of the original request. If the receiver of a request can be represented in an address space-independent way, then you can transfer a command object for the request to a different process and fulfill the request there.
+* Support undo. The Command's execute operation can store state for reversing its effects in the command itself. The Command interface must have an added un-execute operation that reverses the effects of a previous call to execute. The executed commands are stored in a history list. Unlimited-level undo and redo functionality is achieved by traversing this list backward and forward calling un-execute and execute, respectively.
+* Support logging changes so that they can be reapplied in case of a system crash. By augmenting the Command interface with load and store operations, you can keep a persistent log of changes. Recovering from a crash involves reloading logged commands from the disk and re-executing them with the execute operation.
+* Structure a system around high-level operations build on primitive operations. Such a structure is common in information systems that support transactions. A transaction encapsulates a set of data changes. The Command pattern offers a way to model transactions. Commands have a common interface, letting you invoke all transactions the same way. The pattern also makes it easy to extend the system with new transactions.
+* Keep a history of requests.
+* Implement callback functionality.
+* Implement the undo functionality.
+
+## Known uses
+
+* GUI Buttons and menu items in desktop applications.
+* Operations in database systems and transactional systems that support rollback.
+* Macro recording in applications like text editors and spreadsheets.
+* [java.lang.Runnable](http://docs.oracle.com/javase/8/docs/api/java/lang/Runnable.html)
+* [org.junit.runners.model.Statement](https://github.com/junit-team/junit4/blob/master/src/main/java/org/junit/runners/model/Statement.java)
+* [Netflix Hystrix](https://github.com/Netflix/Hystrix/wiki)
+* [javax.swing.Action](http://docs.oracle.com/javase/8/docs/api/javax/swing/Action.html)
+
+## Consequences
+
+Benefits:
+
+* Decouples the object that invokes the operation from the one that knows how to perform it.
+* It's easy to add new Commands, because you don't have to change existing classes.
+* You can assemble a set of commands into a composite command.
+
+Trade-offs:
+
+* Increases the number of classes for each individual command.
+* Can complicate the design by adding multiple layers between senders and receivers.
+
+## Related Patterns
+
+* [Composite](https://java-design-patterns.com/patterns/composite/): Commands can be composed using the Composite pattern to create macro commands.
+* [Memento](https://java-design-patterns.com/patterns/memento/): Can be used for implementing undo mechanisms.
+* [Observer](https://java-design-patterns.com/patterns/observer/): The pattern can be observed for changes that trigger commands.
+
+## Credits
+
+* [Design Patterns: Elements of Reusable Object-Oriented Software](https://www.amazon.com/gp/product/0201633612/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0201633612&linkCode=as2&tag=javadesignpat-20&linkId=675d49790ce11db99d90bde47f1aeb59)
+* [Head First Design Patterns: A Brain-Friendly Guide](https://www.amazon.com/gp/product/0596007124/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0596007124&linkCode=as2&tag=javadesignpat-20&linkId=6b8b6eea86021af6c8e3cd3fc382cb5b)
+* [Refactoring to Patterns](https://www.amazon.com/gp/product/0321213351/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0321213351&linkCode=as2&tag=javadesignpat-20&linkId=2a76fcb387234bc71b1c61150b3cc3a7)
+* [J2EE Design Patterns](https://www.amazon.com/gp/product/0596004273/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0596004273&linkCode=as2&tag=javadesignpat-20&linkId=f27d2644fbe5026ea448791a8ad09c94)
+* [Pattern-Oriented Software Architecture, Volume 1: A System of Patterns](https://amzn.to/3PFUqSY)

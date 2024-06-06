@@ -1,24 +1,148 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Balking
+category: Concurrency
+language: en
+tag:
+    - Decoupling
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Intent
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+Balking Pattern is used to prevent an object from executing a certain code if it is in an incomplete or inappropriate state. If the state is not suitable for the action, the method call is ignored (or "balked").
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Explanation
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+Real world example
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+> There's a start-button in a washing machine to initiate the laundry washing. When the washing machine is inactive the button works as expected, but if it's already washing the button does nothing.
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+In plain words
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> Using the balking pattern, a certain code executes only if the object is in particular state.
+
+Wikipedia says
+
+> The balking pattern is a software design pattern that only executes an action on an object when the object is in a particular state. For example, if an object reads ZIP files and a calling method invokes a get method on the object when the ZIP file is not open, the object would "balk" at the request.
+
+**Programmatic Example**
+
+In this example implementation, `WashingMachine` is an object that has two states in which it can be: ENABLED and WASHING. If the machine is ENABLED, the state changes to WASHING using a thread-safe method. On the other hand, if it already has been washing and any other thread executes `wash()`it won't do that and returns without doing anything.
+
+Here are the relevant parts of the `WashingMachine` class.
+
+```java
+
+@Slf4j
+public class WashingMachine {
+
+    private final DelayProvider delayProvider;
+    private WashingMachineState washingMachineState;
+
+    public WashingMachine(DelayProvider delayProvider) {
+        this.delayProvider = delayProvider;
+        this.washingMachineState = WashingMachineState.ENABLED;
+    }
+
+    public WashingMachineState getWashingMachineState() {
+        return washingMachineState;
+    }
+
+    public void wash() {
+        synchronized (this) {
+            var machineState = getWashingMachineState();
+            LOGGER.info("{}: Actual machine state: {}", Thread.currentThread().getName(), machineState);
+            if (this.washingMachineState == WashingMachineState.WASHING) {
+                LOGGER.error("Cannot wash if the machine has been already washing!");
+                return;
+            }
+            this.washingMachineState = WashingMachineState.WASHING;
+        }
+        LOGGER.info("{}: Doing the washing", Thread.currentThread().getName());
+        this.delayProvider.executeAfterDelay(50, TimeUnit.MILLISECONDS, this::endOfWashing);
+    }
+
+    public synchronized void endOfWashing() {
+        washingMachineState = WashingMachineState.ENABLED;
+        LOGGER.info("{}: Washing completed.", Thread.currentThread().getId());
+    }
+}
+```
+
+Here's the simple `DelayProvider` interface used by the `WashingMachine`.
+
+```java
+public interface DelayProvider {
+    void executeAfterDelay(long interval, TimeUnit timeUnit, Runnable task);
+}
+```
+
+Now we introduce the application using the `WashingMachine`.
+
+```java
+  public static void main(String...args){
+final var washingMachine=new WashingMachine();
+        var executorService=Executors.newFixedThreadPool(3);
+        for(int i=0;i< 3;i++){
+        executorService.execute(washingMachine::wash);
+        }
+        executorService.shutdown();
+        try{
+        executorService.awaitTermination(10,TimeUnit.SECONDS);
+        }catch(InterruptedException ie){
+        LOGGER.error("ERROR: Waiting on executor service shutdown!");
+        Thread.currentThread().interrupt();
+        }
+        }
+```
+
+Here is the console output of the program.
+
+```
+14:02:52.268 [pool-1-thread-2] INFO com.iluwatar.balking.WashingMachine - pool-1-thread-2: Actual machine state: ENABLED
+14:02:52.272 [pool-1-thread-2] INFO com.iluwatar.balking.WashingMachine - pool-1-thread-2: Doing the washing
+14:02:52.272 [pool-1-thread-3] INFO com.iluwatar.balking.WashingMachine - pool-1-thread-3: Actual machine state: WASHING
+14:02:52.273 [pool-1-thread-3] ERROR com.iluwatar.balking.WashingMachine - Cannot wash if the machine has been already washing!
+14:02:52.273 [pool-1-thread-1] INFO com.iluwatar.balking.WashingMachine - pool-1-thread-1: Actual machine state: WASHING
+14:02:52.273 [pool-1-thread-1] ERROR com.iluwatar.balking.WashingMachine - Cannot wash if the machine has been already washing!
+14:02:52.324 [pool-1-thread-2] INFO com.iluwatar.balking.WashingMachine - 14: Washing completed.
+```
+
+## Class diagram
+
+![alt text](./etc/balking.png "Balking")
+
+## Applicability
+
+Use the Balking pattern when
+
+* You want to invoke an action on an object only when it is in a particular state
+* Objects are generally only in a state that is prone to balking temporarily but for an unknown amount of time
+* In multithreaded applications where certain actions should only proceed when specific conditions are met, and those conditions are expected to change over time due to external factors or concurrent operations.
+
+## Known Uses:
+
+* Resource pooling, where resources are only allocated if they are in a valid state for allocation.
+* Thread management, where threads only proceed with tasks if certain conditions (like task availability or resource locks) are met.
+
+## Consequences:
+
+Benefits:
+
+* Reduces unnecessary lock acquisitions in situations where actions cannot proceed, enhancing performance in concurrent applications.
+* Encourages clear separation of state management and behavior, leading to cleaner code.
+* Simplifies the handling of operations that should only be performed under certain conditions without cluttering the caller code with state checks.
+
+Trade-offs:
+
+* Can introduce complexity by obscuring the conditions under which actions are taken or ignored, potentially making the system harder to debug and understand.
+* May lead to missed opportunities or actions if the state changes are not properly monitored or if the balking condition is too restrictive.
+
+## Related patterns
+
+* [Double-Checked Locking Pattern](https://java-design-patterns.com/patterns/double-checked-locking/)
+* [Guarded Suspension Pattern](https://java-design-patterns.com/patterns/guarded-suspension/)
+* [State](https://java-design-patterns.com/patterns/state/)
+
+## Credits
+
+* [Patterns in Java: A Catalog of Reusable Design Patterns Illustrated with UML, 2nd Edition, Volume 1](https://www.amazon.com/gp/product/0471227293/ref=as_li_qf_asin_il_tl?ie=UTF8&tag=javadesignpat-20&creative=9325&linkCode=as2&creativeASIN=0471227293&linkId=0e39a59ffaab93fb476036fecb637b99)

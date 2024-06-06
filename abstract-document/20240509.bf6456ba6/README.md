@@ -1,24 +1,222 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Abstract Document
+category: Structural
+language: en
+tag:
+    - Abstraction
+    - Extensibility
+    - Decoupling
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Intent
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+The Abstract Document design pattern is a structural design pattern that aims to provide a consistent way to handle hierarchical and tree-like data structures by defining a common interface for various document types. It separates the core document structure from specific data formats, enabling dynamic updates and simplified maintenance.
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Explanation
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Abstract Document pattern enables handling additional, non-static properties. This pattern uses concept of traits to enable type safety and separate properties of different classes into set of interfaces.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+Real world example
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+> Consider a car that consists of multiple parts. However, we don't know if the specific car really has all the parts, or just some of them. Our cars are dynamic and extremely flexible.
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+In plain words
+
+> Abstract Document pattern allows attaching properties to objects without them knowing about it.
+
+Wikipedia says
+
+> An object-oriented structural design pattern for organizing objects in loosely typed key-value stores and exposing the data using typed views. The purpose of the pattern is to achieve a high degree of flexibility between components in a strongly typed language where new properties can be added to the object-tree on the fly, without losing the support of type-safety. The pattern makes use of traits to separate different properties of a class into different interfaces.
+
+**Programmatic Example**
+
+Let's first define the base classes `Document` and `AbstractDocument`. They basically make the object hold a property map and any amount of child objects.
+
+```java
+public interface Document {
+
+    Void put(String key, Object value);
+
+    Object get(String key);
+
+    <T> Stream<T> children(String key, Function<Map<String, Object>, T> constructor);
+}
+
+public abstract class AbstractDocument implements Document {
+
+    private final Map<String, Object> properties;
+
+    protected AbstractDocument(Map<String, Object> properties) {
+        Objects.requireNonNull(properties, "properties map is required");
+        this.properties = properties;
+    }
+
+    @Override
+    public Void put(String key, Object value) {
+        properties.put(key, value);
+        return null;
+    }
+
+    @Override
+    public Object get(String key) {
+        return properties.get(key);
+    }
+
+    @Override
+    public <T> Stream<T> children(String key, Function<Map<String, Object>, T> constructor) {
+        return Stream.ofNullable(get(key))
+                .filter(Objects::nonNull)
+                .map(el -> (List<Map<String, Object>>) el)
+                .findAny()
+                .stream()
+                .flatMap(Collection::stream)
+                .map(constructor);
+    }
+  ...
+}
+```
+
+Next we define an enum `Property` and a set of interfaces for type, price, model and parts. This allows us to create static looking interface to our `Car` class.
+
+```java
+public enum Property {
+
+    PARTS, TYPE, PRICE, MODEL
+}
+
+public interface HasType extends Document {
+
+    default Optional<String> getType() {
+        return Optional.ofNullable((String) get(Property.TYPE.toString()));
+    }
+}
+
+public interface HasPrice extends Document {
+
+    default Optional<Number> getPrice() {
+        return Optional.ofNullable((Number) get(Property.PRICE.toString()));
+    }
+}
+
+public interface HasModel extends Document {
+
+    default Optional<String> getModel() {
+        return Optional.ofNullable((String) get(Property.MODEL.toString()));
+    }
+}
+
+public interface HasParts extends Document {
+
+    default Stream<Part> getParts() {
+        return children(Property.PARTS.toString(), Part::new);
+    }
+}
+```
+
+Now we are ready to introduce the `Car`.
+
+```java
+public class Car extends AbstractDocument implements HasModel, HasPrice, HasParts {
+
+    public Car(Map<String, Object> properties) {
+        super(properties);
+    }
+}
+```
+
+And finally here's how we construct and use the `Car` in a full example.
+
+```java
+    LOGGER.info("Constructing parts and car");
+
+        var wheelProperties=Map.of(
+        Property.TYPE.toString(),"wheel",
+        Property.MODEL.toString(),"15C",
+        Property.PRICE.toString(),100L);
+
+        var doorProperties=Map.of(
+        Property.TYPE.toString(),"door",
+        Property.MODEL.toString(),"Lambo",
+        Property.PRICE.toString(),300L);
+
+        var carProperties=Map.of(
+        Property.MODEL.toString(),"300SL",
+        Property.PRICE.toString(),10000L,
+        Property.PARTS.toString(),List.of(wheelProperties,doorProperties));
+
+        var car=new Car(carProperties);
+
+        LOGGER.info("Here is our car:");
+        LOGGER.info("-> model: {}",car.getModel().orElseThrow());
+        LOGGER.info("-> price: {}",car.getPrice().orElseThrow());
+        LOGGER.info("-> parts: ");
+        car.getParts().forEach(p->LOGGER.info("\t{}/{}/{}",
+        p.getType().orElse(null),
+        p.getModel().orElse(null),
+        p.getPrice().orElse(null))
+        );
+
+// Constructing parts and car
+// Here is our car:
+// model: 300SL
+// price: 10000
+// parts: 
+// wheel/15C/100
+// door/Lambo/300
+```
+
+## Class diagram
+
+![alt text](./etc/abstract-document.png "Abstract Document Traits and Domain")
+
+## Applicability
+
+This pattern is particularly useful in scenarios where you have different types of documents that share some common attributes or behaviors, but also have unique attributes or behaviors specific to their individual types. Here are some scenarios where the Abstract Document design pattern can be applicable:
+
+* Content Management Systems (CMS): In a CMS, you might have various types of content such as articles, images, videos, etc. Each type of content could have shared attributes like creation date, author, and tags, while also having specific attributes like image dimensions for images or video duration for videos.
+
+* File Systems: If you're designing a file system where different types of files need to be managed, such as documents, images, audio files, and directories, the Abstract Document pattern can help provide a consistent way to access attributes like file size, creation date, etc., while allowing for specific attributes like image resolution or audio duration.
+
+* E-commerce Systems: An e-commerce platform might have different product types such as physical products, digital downloads, and subscriptions. Each type could share common attributes like name, price, and description, while having unique attributes like shipping weight for physical products or download link for digital products.
+
+* Medical Records Systems: In healthcare, patient records might include various types of data such as demographics, medical history, test results, and prescriptions. The Abstract Document pattern can help manage shared attributes like patient ID and date of birth, while accommodating specialized attributes like test results or prescribed medications.
+
+* Configuration Management: When dealing with configuration settings for software applications, there can be different types of configuration elements, each with its own set of attributes. The Abstract Document pattern can be used to manage these configuration elements while ensuring a consistent way to access and manipulate their attributes.
+
+* Educational Platforms: Educational systems might have various types of learning materials such as text-based content, videos, quizzes, and assignments. Common attributes like title, author, and publication date can be shared, while unique attributes like video duration or assignment due dates can be specific to each type.
+
+* Project Management Tools: In project management applications, you could have different types of tasks like to-do items, milestones, and issues. The Abstract Document pattern could be used to handle general attributes like task name and assignee, while allowing for specific attributes like milestone date or issue priority.
+
+* Documents have diverse and evolving attribute structures.
+
+* Dynamically adding new properties is a common requirement.
+
+* Decoupling data access from specific formats is crucial.
+
+* Maintainability and flexibility are critical for the codebase.
+
+The key idea behind the Abstract Document design pattern is to provide a flexible and extensible way to manage different types of documents or entities with shared and distinct attributes. By defining a common interface and implementing it across various document types, you can achieve a more organized and consistent approach to handling complex data structures.
+
+## Consequences
+
+Benefits
+
+* Flexibility: Accommodates varied document structures and properties.
+
+* Extensibility: Dynamically add new attributes without breaking existing code.
+
+* Maintainability: Promotes clean and adaptable code due to separation of concerns.
+
+* Reusability: Typed views enable code reuse for accessing specific attribute types.
+
+Trade-offs
+
+* Complexity: Requires defining interfaces and views, adding implementation overhead.
+
+* Performance: Might introduce slight performance overhead compared to direct data access.
+
+## Credits
+
+* [Wikipedia: Abstract Document Pattern](https://en.wikipedia.org/wiki/Abstract_Document_Pattern)
+* [Martin Fowler: Dealing with properties](http://martinfowler.com/apsupp/properties.pdf)
+* [Pattern-Oriented Software Architecture Volume 4: A Pattern Language for Distributed Computing (v. 4)](https://amzn.to/49zRP4R)

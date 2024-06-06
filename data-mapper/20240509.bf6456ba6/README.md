@@ -1,24 +1,170 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Data Mapper
+category: Behavioral
+language: en
+tag:
+    - Data access
+    - Decoupling
+    - Object mapping
+    - Persistence
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Object-Relational Mapping (ORM)
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Data Mapper pattern aims to create an abstraction layer between the database and the business logic, allowing them to evolve independently. It maps data from the database objects to in-memory data structures and vice versa, minimizing direct dependencies between the application's core logic and the underlying database structure.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> When a user accesses a specific web page through a browser, he only needs to do several operations to the browser. The browser and the server will take the responsibility of saving data separately. You don't need to know the existence of the server or how to operate the server.
+
+In plain words
+
+> A layer of mappers that moves data between objects and a database while keeping them independent of each other.
+
+Wikipedia says
+
+> A Data Mapper is a Data Access Layer that performs bidirectional transfer of data between a persistent data store (often a relational database) and an in-memory data representation (the domain layer). The goal of the pattern is to keep the in-memory representation and the persistent data store independent of each other and the data mapper itself. This is useful when one needs to model and enforce strict business processes on the data in the domain layer that do not map neatly to the persistent data store.
+
+**Programmatic Example**
+
+The Data Mapper is a design pattern that separates the in-memory objects from the database. Its responsibility is to transfer data between the two and also to isolate them from each other. This pattern promotes the [Single Responsibility Principle](https://java-design-patterns.com/principles/#single-responsibility-principle) and [Separation of Concerns](https://java-design-patterns.com/principles/#separation-of-concerns).
+
+In the data-mapper module, the pattern is demonstrated using a Student class and a StudentDataMapper interface.
+
+The Student class is a simple POJO (Plain Old Java Object) that represents a student. It has properties like studentId, name, and grade.
+
+```java
+public class Student {
+    private int studentId;
+    private String name;
+    private char grade;
+    // ...
+}
+```
+
+The StudentDataMapper interface defines the operations that can be performed on Student objects. These operations include insert, update, delete, and find.
+
+```java
+public interface StudentDataMapper {
+    void insert(final Student student);
+
+    void update(final Student student);
+
+    void delete(final Student student);
+
+    Optional<Student> find(final int studentId);
+    // ...
+}
+```
+
+The StudentDataMapperImpl class implements the StudentDataMapper interface. It contains the actual logic for interacting with the database.
+
+```java
+public class StudentDataMapperImpl implements StudentDataMapper {
+    // ...
+    @Override
+    public void insert(final Student student) {
+        // Insert student into the database
+    }
+
+    @Override
+    public void update(final Student student) {
+        // Update student in the database
+    }
+
+    @Override
+    public void delete(final Student student) {
+        // Delete student from the database
+    }
+
+    @Override
+    public Optional<Student> find(final int studentId) {
+        // Find student in the database
+    }
+    // ...
+}
+```
+
+The App class contains the main method that demonstrates the use of the StudentDataMapper. It creates a Student object, inserts it into the database, finds it, updates it, and finally deletes it.
+
+```java
+public class App {
+    public static void main(final String... args) {
+        final var mapper = new StudentDataMapperImpl();
+        var student = new Student(1, "Adam", 'A');
+        mapper.insert(student);
+        final var studentToBeFound = mapper.find(student.getStudentId());
+        student = new Student(student.getStudentId(), "AdamUpdated", 'A');
+        mapper.update(student);
+        mapper.delete(student);
+    }
+}
+```
+
+Program output:
+
+```
+13:54:29.234 [main] DEBUG com.iluwatar.datamapper.App -- App.main(), student : Student(studentId=1, name=Adam, grade=A), is inserted
+13:54:29.237 [main] DEBUG com.iluwatar.datamapper.App -- App.main(), student : Optional[Student(studentId=1, name=Adam, grade=A)], is searched
+13:54:29.237 [main] DEBUG com.iluwatar.datamapper.App -- App.main(), student : Student(studentId=1, name=AdamUpdated, grade=A), is updated
+13:54:29.238 [main] DEBUG com.iluwatar.datamapper.App -- App.main(), student : Student(studentId=1, name=AdamUpdated, grade=A), is going to be deleted
+```
+
+## Class diagram
+
+![alt text](./etc/data-mapper.png "Data Mapper")
+
+## Applicability
+
+Use the Data Mapper in any of the following situations
+
+* When there's a need to decouple the in-memory objects from the database entities to promote the [Single Responsibility Principle](https://java-design-patterns.com/principles/#single-responsibility-principle) and [Separation of Concerns](https://java-design-patterns.com/principles/#separation-of-concerns).
+* In applications requiring an ORM tool to bridge the gap between object-oriented models and relational databases.
+* When working with complex database schemas where direct data manipulation and object creation lead to cumbersome and error-prone code.
+
+## Tutorials
+
+* [Spring Boot RowMapper](https://zetcode.com/springboot/rowmapper/)
+* [Spring BeanPropertyRowMapper tutorial](https://zetcode.com/spring/beanpropertyrowmapper/)
+* [Data Transfer Object Pattern in Java - Implementation and Mapping (Tutorial for Model Mapper & MapStruct)](https://stackabuse.com/data-transfer-object-pattern-in-java-implementation-and-mapping/)
+
+## Known uses
+
+* ORM frameworks such as Hibernate in Java.
+* Data access layers in enterprise applications where business logic and database management are kept separate.
+* Applications requiring database interactions without tying the code to a specific database implementation.
+* [SqlSession.getMapper()](https://mybatis.org/mybatis-3/java-api.html)
+
+## Consequences
+
+Benefits:
+
+* Promotes [Single Responsibility Principle](https://java-design-patterns.com/principles/#single-responsibility-principle) by separating persistence logic from business logic.
+* Enhances maintainability and readability by centralizing data interaction logic.
+* Improves application's ability to adapt to changes in the database schema with minimal changes to the business logic.
+
+Trade-offs:
+
+* Introduces complexity through the additional abstraction layer.
+* Might lead to performance overhead due to the abstraction layer, especially in large-scale applications or with complex queries.
+* Requires developers to learn and understand the abstraction layer in addition to the database and ORM framework being used.
+
+## Related patterns
+
+* Active Record: Combines data access logic and business logic in the domain entities themselves, contrary to Data Mapper's separation of concerns.
+* Object–Relational Mapping (ORM): A technique to map object-oriented programming language data to a relational database.
+* [Repository](https://java-design-patterns.com/patterns/repository/): Provides an abstraction of the data layer, acting as a collection of domain objects in memory.
+* [Unit of Work](https://java-design-patterns.com/patterns/unit-of-work/): Manages transactions and keeps track of the objects affected by a business transaction to ensure changes are consistent and transactional.
+
+## Credits
+
+* Patterns of Enterprise Application Architecture
+* [Java Persistence with Hibernate](https://amzn.to/3VNzlKe)
+* [Clean Architecture: A Craftsman's Guide to Software Structure and Design](https://amzn.to/3xyEFag)
+* [Data Mapper](http://richard.jp.leguen.ca/tutoring/soen343-f2010/tutorials/implementing-data-mapper/)

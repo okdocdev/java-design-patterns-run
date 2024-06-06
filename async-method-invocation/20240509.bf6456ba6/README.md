@@ -1,24 +1,199 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Async Method Invocation
+category: Concurrency
+language: en
+tag:
+    - Asynchronous
+    - Reactive
+    - Scalability
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Intent
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+Asynchronous method invocation is a pattern where the calling thread is not blocked while waiting results of tasks. The pattern provides parallel processing of multiple independent tasks and retrieving the results via callbacks or waiting until everything is done.
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Also known as
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+* Asynchronous Procedure Call
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> Launching space rockets is an exciting business. The mission command gives an order to launch and after some undetermined time, the rocket either launches successfully or fails miserably.
+
+In plain words
+
+> Asynchronous method invocation starts task processing and returns immediately before the task is ready. The results of the task processing are returned to the caller later.
+
+Wikipedia says
+
+> In multithreaded computer programming, asynchronous method invocation (AMI), also known as asynchronous method calls or the asynchronous pattern is a design pattern in which the call site is not blocked while waiting for the called code to finish. Instead, the calling thread is notified when the reply arrives. Polling for a reply is an undesired option.
+
+**Programmatic Example**
+
+In this example, we are launching space rockets and deploying lunar rovers.
+
+The application demonstrates the async method invocation pattern. The key parts of the pattern are`AsyncResult` which is an intermediate container for an asynchronously evaluated value, `AsyncCallback` which can be provided to be executed on task completion and `AsyncExecutor` that manages the execution of the async tasks.
+
+```java
+public interface AsyncResult<T> {
+    boolean isCompleted();
+
+    T getValue() throws ExecutionException;
+
+    void await() throws InterruptedException;
+}
+```
+
+```java
+public interface AsyncCallback<T> {
+    void onComplete(T value);
+
+    void onError(Exception ex);
+}
+```
+
+```java
+public interface AsyncExecutor {
+    <T> AsyncResult<T> startProcess(Callable<T> task);
+
+    <T> AsyncResult<T> startProcess(Callable<T> task, AsyncCallback<T> callback);
+
+    <T> T endProcess(AsyncResult<T> asyncResult) throws ExecutionException, InterruptedException;
+}
+```
+
+`ThreadAsyncExecutor` is an implementation of `AsyncExecutor`. Some of its key parts are highlighted next.
+
+```java
+public class ThreadAsyncExecutor implements AsyncExecutor {
+
+    @Override
+    public <T> AsyncResult<T> startProcess(Callable<T> task) {
+        return startProcess(task, null);
+    }
+
+    @Override
+    public <T> AsyncResult<T> startProcess(Callable<T> task, AsyncCallback<T> callback) {
+        var result = new CompletableResult<>(callback);
+        new Thread(
+                () -> {
+                    try {
+                        result.setValue(task.call());
+                    } catch (Exception ex) {
+                        result.setException(ex);
+                    }
+                },
+                "executor-" + idx.incrementAndGet())
+                .start();
+        return result;
+    }
+
+    @Override
+    public <T> T endProcess(AsyncResult<T> asyncResult)
+            throws ExecutionException, InterruptedException {
+        if (!asyncResult.isCompleted()) {
+            asyncResult.await();
+        }
+        return asyncResult.getValue();
+    }
+}
+```
+
+Then we are ready to launch some rockets to see how everything works together.
+
+```java
+public static void main(String[]args)throws Exception{
+        // construct a new executor that will run async tasks
+        var executor=new ThreadAsyncExecutor();
+
+// start few async tasks with varying processing times, two last with callback handlers
+final var asyncResult1=executor.startProcess(lazyval(10,500));
+final var asyncResult2=executor.startProcess(lazyval("test",300));
+final var asyncResult3=executor.startProcess(lazyval(50L,700));
+final var asyncResult4=executor.startProcess(lazyval(20,400),callback("Deploying lunar rover"));
+final var asyncResult5=
+        executor.startProcess(lazyval("callback",600),callback("Deploying lunar rover"));
+
+        // emulate processing in the current thread while async tasks are running in their own threads
+        Thread.sleep(350); // Oh boy, we are working hard here
+        log("Mission command is sipping coffee");
+
+// wait for completion of the tasks
+final var result1=executor.endProcess(asyncResult1);
+final var result2=executor.endProcess(asyncResult2);
+final var result3=executor.endProcess(asyncResult3);
+        asyncResult4.await();
+        asyncResult5.await();
+
+        // log the results of the tasks, callbacks log immediately when complete
+        log("Space rocket <"+result1+"> launch complete");
+        log("Space rocket <"+result2+"> launch complete");
+        log("Space rocket <"+result3+"> launch complete");
+        }
+```
+
+Here's the program console output.
+
+```java
+21:47:08.227[executor-2]INFO com.iluwatar.async.method.invocation.App-Space rocket<test> launched successfully
+        21:47:08.269[main]INFO com.iluwatar.async.method.invocation.App-Mission command is sipping coffee
+        21:47:08.318[executor-4]INFO com.iluwatar.async.method.invocation.App-Space rocket<20>launched successfully
+        21:47:08.335[executor-4]INFO com.iluwatar.async.method.invocation.App-Deploying lunar rover<20>
+        21:47:08.414[executor-1]INFO com.iluwatar.async.method.invocation.App-Space rocket<10>launched successfully
+        21:47:08.519[executor-5]INFO com.iluwatar.async.method.invocation.App-Space rocket<callback> launched successfully
+        21:47:08.519[executor-5]INFO com.iluwatar.async.method.invocation.App-Deploying lunar rover<callback>
+21:47:08.616[executor-3]INFO com.iluwatar.async.method.invocation.App-Space rocket<50>launched successfully
+        21:47:08.617[main]INFO com.iluwatar.async.method.invocation.App-Space rocket<10>launch complete
+        21:47:08.617[main]INFO com.iluwatar.async.method.invocation.App-Space rocket<test> launch complete
+        21:47:08.618[main]INFO com.iluwatar.async.method.invocation.App-Space rocket<50>launch complete
+```
+
+# Class diagram
+
+![alt text](./etc/async-method-invocation.urm.png "Async Method Invocation")
+
+## Applicability
+
+Use the async method invocation pattern when
+
+* When operations do not need to complete before proceeding with the next steps in a program.
+* For tasks that are resource-intensive or time-consuming, such as IO operations, network requests, or complex computations, where making the operation synchronous would significantly impact performance or user experience.
+* In GUI applications to prevent freezing or unresponsiveness during long-running tasks.
+* In web applications for non-blocking IO operations.
+
+## Known Uses
+
+* Web servers handling HTTP requests asynchronously to improve throughput and reduce latency.
+* Desktop and mobile applications using background threads to perform time-consuming operations without blocking the user interface.
+* Microservices architectures where services perform asynchronous communications via messaging queues or event streams.
+* [FutureTask](http://docs.oracle.com/javase/8/docs/api/java/util/concurrent/FutureTask.html)
+* [CompletableFuture](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html)
+* [ExecutorService](http://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html)
+* [Task-based Asynchronous Pattern](https://msdn.microsoft.com/en-us/library/hh873175.aspx)
+
+## Consequences
+
+Benefits:
+
+* Improved Responsiveness: The main thread or application flow remains unblocked, improving the user experience in GUI applications and overall responsiveness.
+* Better Resource Utilization: By enabling parallel execution, system resources (like CPU and IO) are utilized more efficiently, potentially improving the application's throughput.
+* Scalability: Easier to scale applications, as tasks can be distributed across available resources more effectively.
+
+Trade-offs:
+
+* Complexity: Introducing asynchronous operations can complicate the codebase, making it more challenging to understand, debug, and maintain.
+* Resource Management: Requires careful management of threads or execution contexts, which can introduce overhead and potential resource exhaustion issues.
+* Error Handling: Asynchronous operations can make error handling more complex, as exceptions may occur in different threads or at different times.
+
+Related Patterns:
+
+* [Command](https://java-design-patterns.com/patterns/command/): Asynchronous method invocation can be used to implement the Command pattern, where commands are executed asynchronously.
+* [Observer](https://java-design-patterns.com/patterns/observer/): Asynchronous method invocation can be used to notify observers asynchronously when a subject's state changes.
+* [Promise](https://java-design-patterns.com/patterns/promise/): The AsyncResult interface can be considered a form of Promise, representing a value that may not be available yet.
+
+## Credits
+
+* [Design Patterns: Elements of Reusable Object-Oriented Software](https://amzn.to/3Ti1N4f)
+* [Java Concurrency in Practice](https://amzn.to/4ab97VU)

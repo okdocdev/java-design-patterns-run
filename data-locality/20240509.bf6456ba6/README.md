@@ -1,24 +1,135 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Data Locality
+category: Performance optimization
+language: en
+tag:
+    - Caching
+    - Data access
+    - Game programming
+    - Memory management
+    - Performance
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Cache-Friendly Design
+* Data-Oriented Design
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Data Locality design pattern aims to minimize data access times and improve cache utilization by arranging data in memory to take advantage of spatial locality. This pattern is particularly useful in high-performance computing and game development where access speed is crucial.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real-world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> Consider a supermarket where items are arranged based on purchase patterns and categories for efficiency. Just like the Data Locality pattern organizes data in memory for quick access, the supermarket places frequently bought items together and in easily accessible areas. This layout minimizes the time shoppers spend searching for items, enhancing their shopping experience by ensuring that related and popular items are close at hand, much like how data locality improves cache utilization and reduces access latency in computing.
+
+In plain words
+
+> The Data Locality pattern organizes data in memory to reduce access times and improve performance by ensuring that data frequently accessed together is stored close together.
+
+Programmatic Example
+
+The Data Locality pattern is a design pattern that aims to improve performance by arranging data in memory to take advantage of spatial locality. This pattern is particularly useful in high-performance computing and game development where access speed is crucial.
+
+In the data-locality module, the pattern is demonstrated using a game loop that processes a bunch of game entities. These entities are decomposed into different domains: AI, physics, and rendering.
+
+The GameEntity class is the main class that represents a game entity. It contains an array of AiComponent, PhysicsComponent, and RenderComponent objects. These components represent different aspects of a game entity.
+
+```java
+public class GameEntity {
+    private final AiComponent[] aiComponents;
+    private final PhysicsComponent[] physicsComponents;
+    private final RenderComponent[] renderComponents;
+// ...
+}
+```
+
+The GameEntity class has a start method that initializes all the components.
+
+```java
+public void start() {
+  for (int i = 0; i < numEntities; i++) {
+    aiComponents[i] = new AiComponent();
+    physicsComponents[i] = new PhysicsComponent();
+    renderComponents[i] = new RenderComponent();
+  }
+}
+```
+
+The GameEntity class also has an update method that updates all the components. This method demonstrates the data locality pattern. Instead of updating all aspects of a single entity at a time (AI, physics, and rendering), it updates the same aspect (e.g., AI) for all entities first, then moves on to the next aspect (e.g., physics). This approach improves cache utilization because it's more likely that the data needed for the update is already in the cache.
+
+```java
+public void update() {
+  for (int i = 0; i < numEntities; i++) {
+    aiComponents[i].update();
+  }
+  for (int i = 0; i < numEntities; i++) {
+    physicsComponents[i].update();
+  }
+  for (int i = 0; i < numEntities; i++) {
+    renderComponents[i].update();
+  }
+}
+```
+
+The Application class contains the main method that creates a GameEntity object and starts the game loop.
+
+```java
+public class Application {
+  public static void main(String[] args) {
+    var gameEntity = new GameEntity(NUM_ENTITIES);
+    gameEntity.start();
+    gameEntity.update();
+  }
+}
+```
+
+In this way, the data-locality module demonstrates the Data Locality pattern. By updating all components of the same type together, it increases the likelihood that the data needed for the update is already in the cache, thereby improving performance.
+
+## Class diagram
+
+![alt text](./etc/data-locality.urm.png "Data Locality pattern class diagram")
+
+## Applicability
+
+This pattern is applicable in scenarios where large datasets are processed and performance is critical. It's particularly useful in:
+
+* Game development for efficient rendering and physics calculations.
+* High-performance computing tasks that require rapid access to large data sets.
+* Real-time data processing systems where latency is a critical factor.
+
+## Known Uses
+
+* Game engines (e.g., Unity, Unreal Engine) to optimize entity and component data access.
+* High-performance matrix libraries in scientific computing to optimize matrix operations.
+* Real-time streaming data processing systems for efficient data manipulation and access.
+
+## Consequences
+
+Benefits:
+
+* Improved Cache Utilization: By enhancing spatial locality, data frequently accessed together is stored close together in memory, improving cache hit rates.
+* Reduced Access Latency: Minimizes the time taken to fetch data from memory, leading to performance improvements.
+* Enhanced Performance: Overall system performance is improved due to reduced memory access times and increased efficiency in data processing.
+
+Trade-offs:
+
+* Complexity in Implementation: Managing data layout can add complexity to the system design and implementation.
+* Maintenance Overhead: As data access patterns evolve, the layout may need to be re-evaluated, adding to the maintenance overhead.
+* Less Flexibility: The tight coupling of data layout to access patterns can reduce flexibility in how data structures are used and evolved over time.
+
+## Related Patterns
+
+* [Flyweight](https://java-design-patterns.com/patterns/flyweight/): Can be used in conjunction with Data Locality to share data efficiently among multiple objects.
+* [Object Pool](https://java-design-patterns.com/patterns/object-pool/): Often used together to manage a group of initialized objects that can be reused, further optimizing memory usage and access.
+* [Iterator](https://java-design-patterns.com/patterns/iterator/): Facilitates navigation through a collection of data laid out with data locality in mind.
+
+## Credits
+
+* [Game Programming Patterns](https://amzn.to/3vK8c0d)
+* [High-Performance Java Persistence](https://amzn.to/3TMc8Wd)
+* [Java Performance: The Definitive Guide](https://amzn.to/3Ua392J)
+* [Effective Java](https://amzn.to/4cGk2Jz)
+* [Game Programming Patterns Optimization Patterns: Data Locality](http://gameprogrammingpatterns.com/data-locality.html)

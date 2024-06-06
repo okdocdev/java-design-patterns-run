@@ -1,24 +1,150 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Domain Model
+category: Structural
+language: en
+tag:
+    - Business
+    - Domain
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Conceptual Model
+* Domain Object Model
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Domain Model pattern aims to create a conceptual model in your software that matches the real-world system it's designed to represent. It involves using rich domain objects that encapsulate both data and behavior relevant to the application domain.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> Let's assume that we need to build an e-commerce web application. While analyzing requirements you will notice that there are few nouns you talk about repeatedly. It’s your Customer, and a Product the customer looks for. These two are your domain-specific classes and each of that classes will include some business logic specific to its domain.
+
+In plain words
+
+> The Domain Model is an object model of the domain that incorporates both behavior and data.
+
+Programmatic Example
+
+In the example of the e-commerce app, we need to deal with the domain logic of customers who want to buy products and return them if they want. We can use the domain model pattern and create classes `Customer` and `Product` where every single instance of that class incorporates both behavior and data and represents only one record in the underlying table.
+
+```java
+public class Customer {
+    // Customer properties and methods
+}
+
+public class Product {
+    // Product properties and methods
+}
+```
+
+Data Access Objects (DAOs): These objects provide an abstract interface to the database. They are used to retrieve domain entities and save changes back to the database. In the provided code, CustomerDaoImpl and ProductDaoImpl are the DAOs.
+
+```java
+public class CustomerDaoImpl implements CustomerDao {
+    // Implementation of the methods defined in the CustomerDao interface
+}
+
+public class ProductDaoImpl implements ProductDao {
+    // Implementation of the methods defined in the ProductDao interface
+}
+```
+
+Domain Logic: This is encapsulated within the domain entities. For example, the Customer class has methods like buyProduct() and returnProduct() which represent the actions a customer can perform.
+
+```java
+public class Customer {
+    // ...
+
+    public void buyProduct(Product product) {
+        // Implementation of buying a product
+    }
+
+    public void returnProduct(Product product) {
+        // Implementation of returning a product
+    }
+}
+```
+
+Application: The App class uses the domain entities and their methods to implement the business logic of the application.
+
+```java
+public class App {
+    public static void main(String[] args) {
+        // Create customer and products
+        // Perform actions like buying and returning products
+    }
+}
+```
+
+The program output:
+
+```java
+17:52:28.690[main]INFO com.iluwatar.domainmodel.Customer-Tom balance:USD30.00 
+17:52:28.695[main]INFO com.iluwatar.domainmodel.Customer-Tom didn't bought anything
+17:52:28.699[main]INFO com.iluwatar.domainmodel.Customer-Tom want to buy Eggs($10.00)...
+17:52:28.705[main]INFO com.iluwatar.domainmodel.Customer-Tom bought Eggs!
+17:52:28.705[main]INFO com.iluwatar.domainmodel.Customer-Tom balance:USD20.00
+17:52:28.705[main]INFO com.iluwatar.domainmodel.Customer-Tom want to buy Butter($20.00)...
+17:52:28.712[main]INFO com.iluwatar.domainmodel.Customer-Tom bought Butter!
+17:52:28.712[main]INFO com.iluwatar.domainmodel.Customer-Tom balance:USD0.00
+17:52:28.712[main]INFO com.iluwatar.domainmodel.Customer-Tom want to buy Cheese($20.00)...
+17:52:28.712[main]ERROR com.iluwatar.domainmodel.Customer-Not enough money!
+17:52:28.712[main]INFO com.iluwatar.domainmodel.Customer-Tom balance:USD0.00
+17:52:28.712[main]INFO com.iluwatar.domainmodel.Customer-Tom want to return Butter($20.00)...
+17:52:28.721[main]INFO com.iluwatar.domainmodel.Customer-Tom returned Butter!
+17:52:28.721[main]INFO com.iluwatar.domainmodel.Customer-Tom balance:USD20.00
+17:52:28.721[main]INFO com.iluwatar.domainmodel.Customer-Tom want to buy Cheese($20.00)...
+17:52:28.726[main]INFO com.iluwatar.domainmodel.Customer-Tom bought Cheese!
+17:52:28.737[main]INFO com.iluwatar.domainmodel.Customer-Tom balance:USD0.00
+17:52:28.738[main]INFO com.iluwatar.domainmodel.Customer-Tom bought:Eggs-$10.00,Cheese-$20.00
+```
+
+## Class diagram
+
+![Domain Model class diagram](./etc/domain-model.urm.png "domain model")
+
+## Applicability
+
+* Appropriate in complex applications with rich business logic.
+* When the business logic or domain complexity is high and requires a model that closely represents real-world entities and their relationships.
+* Suitable for applications where domain experts are involved in the development process to ensure the model accurately reflects domain concepts.
+
+## Known Uses
+
+* Enterprise applications (ERP, CRM systems)
+* Financial systems (banking, trading platforms)
+* Healthcare applications (patient records management)
+* E-commerce platforms (product catalogs, shopping carts)
+
+## Consequences
+
+Benefits:
+
+* Improved Communication: Provides a common language for developers and domain experts, enhancing understanding and collaboration.
+* Flexibility: Encapsulates business logic within domain entities, making it easier to modify and extend without affecting other system parts.
+* Maintainability: A well-structured domain model can simplify maintenance and evolution of the application over time.
+* Reusability: Domain classes can often be reused across different projects within the same domain.
+
+Trade-offs:
+
+* Complexity: Can introduce complexity, especially in simple applications where a domain model might be overkill.
+* Performance Concerns: Rich domain objects with complex behaviors might lead to performance bottlenecks, requiring careful optimization.
+* Learning Curve: Requires a good understanding of the domain and may involve a steep learning curve for developers unfamiliar with the domain concepts.
+
+## Related Patterns
+
+* [Data Access Object (DAO)](https://java-design-patterns.com/patterns/dao/): For abstracting and encapsulating all access to the data source.
+* [Service Layer](https://java-design-patterns.com/patterns/service-layer/): Defines an application's boundary with a layer of services that establishes a set of available operations and coordinates the application's response in each operation.
+* [Repository](https://java-design-patterns.com/patterns/repository/): Mediates between the domain and data mapping layers, acting like an in-memory domain object collection.
+* [Unit of Work](https://java-design-patterns.com/patterns/unit-of-work/): Maintains a list of objects affected by a business transaction and coordinates the writing out of changes.
+
+## Credits
+
+* [Domain-Driven Design: Tackling Complexity in the Heart of Software](https://amzn.to/3vMCjnP)
+* [Implementing Domain-Driven Design](https://amzn.to/4cUX4OL)
+* [Patterns of Enterprise Application Architecture](https://www.amazon.com/gp/product/0321127420/ref=as_li_qf_asin_il_tl?ie=UTF8&tag=javadesignpat-20&creative=9325&linkCode=as2&creativeASIN=0321127420&linkId=18acc13ba60d66690009505577c45c04)
+* [Domain Model Pattern](https://martinfowler.com/eaaCatalog/domainModel.html)
+* [Architecture patterns: domain model and friends](https://inviqa.com/blog/architecture-patterns-domain-model-and-friends)

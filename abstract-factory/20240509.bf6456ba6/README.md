@@ -1,24 +1,248 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Abstract Factory
+category: Creational
+language: en
+tag:
+    - Abstraction
+    - Decoupling
+    - Gang of Four
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+Kit
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Abstract Factory design pattern provides a way to create families of related objects without specifying their concrete classes. This allows for code that is independent of the specific classes of objects it uses, promoting flexibility and maintainability.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real-world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> To create a kingdom we need objects with a common theme. The elven kingdom needs an elven king, elven castle, and elven army whereas the orcish kingdom needs an orcish king, orcish castle, and orcish army. There is a dependency between the objects in the kingdom.
+
+In plain words
+
+> A factory of factories; a factory that groups the individual but related/dependent factories together without specifying their concrete classes.
+
+Wikipedia says
+
+> The abstract factory pattern provides a way to encapsulate a group of individual factories that have a common theme without specifying their concrete classes
+
+**Programmatic Example**
+
+Translating the kingdom example above. First of all, we have some interfaces and implementation for the objects in the kingdom.
+
+```java
+public interface Castle {
+    String getDescription();
+}
+
+public interface King {
+    String getDescription();
+}
+
+public interface Army {
+    String getDescription();
+}
+
+// Elven implementations ->
+public class ElfCastle implements Castle {
+    static final String DESCRIPTION = "This is the elven castle!";
+
+    @Override
+    public String getDescription() {
+        return DESCRIPTION;
+    }
+}
+
+public class ElfKing implements King {
+    static final String DESCRIPTION = "This is the elven king!";
+
+    @Override
+    public String getDescription() {
+        return DESCRIPTION;
+    }
+}
+
+public class ElfArmy implements Army {
+    static final String DESCRIPTION = "This is the elven Army!";
+
+    @Override
+    public String getDescription() {
+        return DESCRIPTION;
+    }
+}
+
+// Orcish implementations similarly -> ...
+
+```
+
+Then we have the abstraction and implementations for the kingdom factory.
+
+```java
+public interface KingdomFactory {
+    Castle createCastle();
+
+    King createKing();
+
+    Army createArmy();
+}
+
+public class ElfKingdomFactory implements KingdomFactory {
+
+    @Override
+    public Castle createCastle() {
+        return new ElfCastle();
+    }
+
+    @Override
+    public King createKing() {
+        return new ElfKing();
+    }
+
+    @Override
+    public Army createArmy() {
+        return new ElfArmy();
+    }
+}
+
+public class OrcKingdomFactory implements KingdomFactory {
+
+    @Override
+    public Castle createCastle() {
+        return new OrcCastle();
+    }
+
+    @Override
+    public King createKing() {
+        return new OrcKing();
+    }
+
+    @Override
+    public Army createArmy() {
+        return new OrcArmy();
+    }
+}
+```
+
+Now we have the abstract factory that lets us make a family of related objects i.e. elven kingdom factory creates elven castle, king and army, etc.
+
+```java
+var factory=new ElfKingdomFactory();
+        var castle=factory.createCastle();
+        var king=factory.createKing();
+        var army=factory.createArmy();
+
+        castle.getDescription();
+        king.getDescription();
+        army.getDescription();
+```
+
+Program output:
+
+```java
+This is the elven castle!
+        This is the elven king!
+        This is the elven Army!
+```
+
+Now, we can design a factory for our different kingdom factories. In this example, we created `FactoryMaker`, responsible for returning an instance of either `ElfKingdomFactory` or `OrcKingdomFactory`. The client can use `FactoryMaker` to create the desired concrete factory which, in turn, will produce different concrete objects (derived from `Army`, `King`, `Castle`). In this example, we also used an enum to parameterize which type of kingdom factory the client will ask for.
+
+```java
+public static class FactoryMaker {
+
+    public enum KingdomType {
+        ELF, ORC
+    }
+
+    public static KingdomFactory makeFactory(KingdomType type) {
+        return switch (type) {
+            case ELF -> new ElfKingdomFactory();
+            case ORC -> new OrcKingdomFactory();
+        };
+    }
+}
+
+    public static void main(String[] args) {
+        var app = new App();
+
+        LOGGER.info("Elf Kingdom");
+        app.createKingdom(FactoryMaker.makeFactory(KingdomType.ELF));
+        LOGGER.info(app.getArmy().getDescription());
+        LOGGER.info(app.getCastle().getDescription());
+        LOGGER.info(app.getKing().getDescription());
+
+        LOGGER.info("Orc Kingdom");
+        app.createKingdom(FactoryMaker.makeFactory(KingdomType.ORC));
+        --similar use of the orc factory
+    }
+```
+
+## Class diagram
+
+![alt text](./etc/abstract-factory.urm.png "Abstract Factory class diagram")
+
+## Applicability
+
+Use the Abstract Factory pattern when
+
+* The system should be independent of how its products are created, composed, and represented
+* The system should be configured with one of the multiple families of products
+* The family of related product objects is designed to be used together, and you need to enforce this constraint
+* You want to provide a class library of products, and you want to reveal just their interfaces, not their implementations
+* The lifetime of the dependency is conceptually shorter than the lifetime of the consumer.
+* You need a run-time value to construct a particular dependency
+* You want to decide which product to call from a family at runtime.
+* You need to supply one or more parameters only known at run-time before you can resolve a dependency.
+* When you need consistency among products
+* You don’t want to change existing code when adding new products or families of products to the program.
+
+Example use cases
+
+* Selecting to call to the appropriate implementation of FileSystemAcmeService or DatabaseAcmeService or NetworkAcmeService at runtime.
+* Unit test case writing becomes much easier
+* UI tools for different OS
+
+## Consequences
+
+Benefits
+
+* Flexibility: Easily switch between product families without code modifications.
+
+* Decoupling: Client code only interacts with abstract interfaces, promoting portability and maintainability.
+
+* Reusability: Abstract factories and products facilitate component reuse across projects.
+
+* Maintainability: Changes to individual product families are localized, simplifying updates.
+
+Trade-offs
+
+* Complexity: Defining abstract interfaces and concrete factories adds initial overhead.
+
+* Indirectness: Client code interacts with products indirectly through factories, potentially reducing transparency.
+
+## Tutorials
+
+* [Abstract Factory Pattern Tutorial](https://www.journaldev.com/1418/abstract-factory-design-pattern-in-java)
+* [Refactoring Guru - Abstract Factory](https://refactoring.guru/design-patterns/abstract-factory)
+
+## Known uses
+
+* [javax.xml.parsers.DocumentBuilderFactory](http://docs.oracle.com/javase/8/docs/api/javax/xml/parsers/DocumentBuilderFactory.html)
+* [javax.xml.transform.TransformerFactory](http://docs.oracle.com/javase/8/docs/api/javax/xml/transform/TransformerFactory.html#newInstance--)
+* [javax.xml.xpath.XPathFactory](http://docs.oracle.com/javase/8/docs/api/javax/xml/xpath/XPathFactory.html#newInstance--)
+
+## Related patterns
+
+* [Factory Method](https://java-design-patterns.com/patterns/factory-method/)
+* [Factory Kit](https://java-design-patterns.com/patterns/factory-kit/)
+
+## Credits
+
+* [Design Patterns: Elements of Reusable Object-Oriented Software](https://www.amazon.com/gp/product/0201633612/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0201633612&linkCode=as2&tag=javadesignpat-20&linkId=675d49790ce11db99d90bde47f1aeb59)
+* [Head First Design Patterns: A Brain-Friendly Guide](https://www.amazon.com/gp/product/0596007124/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0596007124&linkCode=as2&tag=javadesignpat-20&linkId=6b8b6eea86021af6c8e3cd3fc382cb5b)
+* [Java Design Patterns: A Hands-On Experience with Real-World Examples](https://amzn.to/3HWNf4U)
+* [Design Patterns in Java](https://amzn.to/3Syw0vC)
+* 

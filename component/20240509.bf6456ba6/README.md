@@ -1,24 +1,179 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Component
+categories: Structural
+language: en
+tag:
+    - Game programming
+    - Decoupling
+    - Modularity
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Entity-Component-System (ECS)
+* Component-Entity-System (CES)
+* Component-Based Architecture (CBA)
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Component design pattern aims to organize code into reusable, interchangeable components, promoting flexibility and ease of maintenance in game development by allowing entities to be configured with varying behaviors.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+![Intent](./etc/component.duplication.png "Component Design Pattern")
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+## Explanation
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+Real world example
+> Suppose your video game consists of a graphics component and a sound component. Including the methods and attributes of both of these features in a single java class can be problematic due to many reasons. Firstly, the graphics and sound code can create an extremely long java class which can be hard to maintain. Furthermore, graphics components may be written and implemented by a separate team as to the sound contents. If both parties work simultaneously on the same java class, this may cause conflicts and major delay. Using the component design pattern, the development team is able to create individual component classes for graphics and sound whilst providing the domain/object the reach to both of these attributes.
+
+
+In plain words
+> The component design pattern provides a single attribute to be accessible by numerous objects without requiring the existence of a relationship between the objects themselves.
+
+Key drawback
+> With the implementation of the component design pattern, it can be very difficult to create a relationship between components. For example, suppose we require the sound component to be aware of the current animation in order create a certain sound based upon the animation; this can be quite tricky as the component design pattern makes components 'unaware' of other components' existence due to its decoupling nature.
+
+**Programmatic Example**
+
+The App class creates a demonstration of the use of the component pattern by creating two different objects which inherit a small collection of individual components that are modifiable.
+
+```java
+public final class App {
+    /**
+     * Program entry point.
+     *
+     * @param args args command line args.
+     */
+    public static void main(String[] args) {
+        final var player = GameObject.createPlayer();
+        final var npc = GameObject.createNpc();
+
+
+        LOGGER.info("Player Update:");
+        player.update(KeyEvent.KEY_LOCATION_LEFT);
+        LOGGER.info("NPC Update:");
+        npc.demoUpdate();
+    }
+}
+```
+
+Much of the program exists within the GameObject class, within this class, the player and NPC object create methods are set up. Additionally, this class also consists of the method calls used to update/alter information of the object's components.
+
+```java
+public class GameObject {
+    private final InputComponent inputComponent;
+    private final PhysicComponent physicComponent;
+    private final GraphicComponent graphicComponent;
+
+    public String name;
+    public int velocity = 0;
+    public int coordinate = 0;
+
+    public static GameObject createPlayer() {
+        return new GameObject(new PlayerInputComponent(),
+                new ObjectPhysicComponent(),
+                new ObjectGraphicComponent(),
+                "player");
+    }
+
+    public static GameObject createNpc() {
+        return new GameObject(
+                new DemoInputComponent(),
+                new ObjectPhysicComponent(),
+                new ObjectGraphicComponent(),
+                "npc");
+    }
+
+    public void demoUpdate() {
+        inputComponent.update(this);
+        physicComponent.update(this);
+        graphicComponent.update(this);
+    }
+
+    public void update(int e) {
+        inputComponent.update(this, e);
+        physicComponent.update(this);
+        graphicComponent.update(this);
+    }
+
+    public void updateVelocity(int acceleration) {
+        this.velocity += acceleration;
+    }
+
+    public void updateCoordinate() {
+        this.coordinate += this.velocity;
+    }
+}
+```
+
+Upon opening the component package, the collection of components are revealed. These components provide the interface for objects to inherit these domains. The PlayerInputComponent class shown below updates the object's velocity characteristic based on user's key event input.
+
+```java
+public class PlayerInputComponent implements InputComponent {
+    private static final int walkAcceleration = 1;
+
+    /**
+     * The update method to change the velocity based on the input key event.
+     *
+     * @param gameObject the gameObject instance
+     * @param e          key event instance
+     */
+    @Override
+    public void update(GameObject gameObject, int e) {
+        switch (e) {
+            case KeyEvent.KEY_LOCATION_LEFT -> {
+                gameObject.updateVelocity(-WALK_ACCELERATION);
+                LOGGER.info(gameObject.getName() + " has moved left.");
+            }
+            case KeyEvent.KEY_LOCATION_RIGHT -> {
+                gameObject.updateVelocity(WALK_ACCELERATION);
+                LOGGER.info(gameObject.getName() + " has moved right.");
+            }
+            default -> {
+                LOGGER.info(gameObject.getName() + "'s velocity is unchanged due to the invalid input");
+                gameObject.updateVelocity(0);
+            } // incorrect input
+        }
+    }
+}
+```
+
+## Class diagram
+
+![UML](./etc/component.uml.png "The UML for Component Design Pattern")
+
+## Applicability
+
+* Used in game development and simulations where game entities (e.g., characters, items) can have a dynamic set of abilities or states.
+* Suitable for systems requiring high modularity and systems where entities might need to change behavior at runtime without inheritance hierarchies.
+
+## Known Uses
+
+* Game engines like Unity, Unreal Engine, and various custom engines in AAA and indie games.
+* Simulation systems that require flexible, dynamic object composition.
+
+## Consequences
+
+Benefits:
+
+* Flexibility and Reusability: Components can be reused across different entities, making it easier to add new features or modify existing ones.
+* Decoupling: Reduces dependencies between game entity states and behaviors, facilitating easier changes and maintenance.
+* Dynamic Composition: Entities can alter their behavior at runtime by adding or removing components, providing significant flexibility in game design.
+
+Trade-offs:
+
+* Complexity: Can introduce additional complexity in system architecture, particularly in managing dependencies and communications between components.
+* Performance Considerations: Depending on implementation, may incur a performance overhead due to indirection and dynamic behavior, especially critical in high-performance game loops.
+
+## Related Patterns
+
+* [Decorator](https://java-design-patterns.com/patterns/decorator/): Similar concept of adding responsibilities dynamically, but without the focus on game entities.
+* [Flyweight](https://java-design-patterns.com/patterns/flyweight/): Can be used in conjunction with the Component pattern to share component instances among many entities to save memory.
+* [Observer](https://java-design-patterns.com/patterns/observer/): Often used in Component systems to communicate state changes between components.
+
+## Credits
+
+* [Component Design Pattern] (https://gameprogrammingpatterns.com/component.html)
+* [Component pattern - game programming series - Tutemic] (https://www.youtube.com/watch?v=n92GBp2WMkg&ab_channel=Tutemic)
+* [Game Programming Patterns](https://amzn.to/4cDRWhV)
+* [Unity in Action: Multiplatform Game Development in C#](https://amzn.to/3THO6vw)
+* [Procedural Content Generation for Unity Game Development](https://amzn.to/3vBKCTp)

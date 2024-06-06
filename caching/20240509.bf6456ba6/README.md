@@ -1,24 +1,365 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Caching
+category: Performance optimization
+language: en
+tag:
+    - Caching
+    - Performance
+    - Cloud distributed
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Intent
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+The caching pattern avoids expensive re-acquisition of resources by not releasing them immediately after use. The resources retain their identity, are kept in some fast-access storage, and are re-used to avoid having to acquire them again.
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Also known as
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+* Cache
+* Temporary Storage
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> A team is working on a website that provides new homes for abandoned cats. People can post their cats on the website after registering, but all the new posts require approval from one of the site moderators. The user accounts of the site moderators contain a specific flag and the data is stored in a MongoDB database. Checking for the moderator flag each time a post is viewed becomes expensive, and it's a good idea to utilize caching here.
+
+In plain words
+
+> Caching pattern keeps frequently needed data in fast-access storage to improve performance.
+
+Wikipedia says:
+
+> In computing, a cache is a hardware or software component that stores data so that future requests for that data can be served faster; the data stored in a cache might be the result of an earlier computation or a copy of data stored elsewhere. A cache hit occurs when the requested data can be found in a cache, while a cache miss occurs when it cannot. Cache hits are served by reading data from the cache, which is faster than recomputing a result or reading from a slower data store; thus, the more requests that can be served from the cache, the faster the system performs.
+
+**Programmatic Example**
+
+Let's first look at the data layer of our application. The interesting classes are `UserAccount` which is a simple Java object containing the user account details, and `DbManager` interface which handles reading and writing of these objects to/from database.
+
+```java
+
+@Data
+@AllArgsConstructor
+@ToString
+@EqualsAndHashCode
+public class UserAccount {
+    private String userId;
+    private String userName;
+    private String additionalInfo;
+}
+
+public interface DbManager {
+
+    void connect();
+
+    void disconnect();
+
+    UserAccount readFromDb(String userId);
+
+    UserAccount writeToDb(UserAccount userAccount);
+
+    UserAccount updateDb(UserAccount userAccount);
+
+    UserAccount upsertDb(UserAccount userAccount);
+}
+```
+
+In the example, we are demonstrating various different caching policies
+
+* Write-through writes data to the cache and DB in a single transaction
+* Write-around writes data immediately into the DB instead of the cache
+* Write-behind writes data into the cache initially whilst the data is only written into the DB when the cache is full
+* Cache-aside pushes the responsibility of keeping the data synchronized in both data sources to the application itself
+* Read-through strategy is also included in the aforementioned strategies, and it returns data from the cache to the caller if it exists, otherwise queries from DB and stores it into the cache for future use.
+
+The cache implementation in `LruCache` is a hash table accompanied by a doubly linked-list. The linked-list helps in capturing and maintaining the LRU data in the cache. When data is queried (from the cache), added (to the cache), or updated, the data is moved to the front of the list to depict itself as the most-recently-used data. The LRU data is always at the end of the list.
+
+```java
+
+@Slf4j
+public class LruCache {
+
+    static class Node {
+        String userId;
+        UserAccount userAccount;
+        Node previous;
+        Node next;
+
+        public Node(String userId, UserAccount userAccount) {
+            this.userId = userId;
+            this.userAccount = userAccount;
+        }
+    }
+
+    /* ... omitted details ... */
+
+    public LruCache(int capacity) {
+        this.capacity = capacity;
+    }
+
+    public UserAccount get(String userId) {
+        if (cache.containsKey(userId)) {
+            var node = cache.get(userId);
+            remove(node);
+            setHead(node);
+            return node.userAccount;
+        }
+        return null;
+    }
+
+    public void set(String userId, UserAccount userAccount) {
+        if (cache.containsKey(userId)) {
+            var old = cache.get(userId);
+            old.userAccount = userAccount;
+            remove(old);
+            setHead(old);
+        } else {
+            var newNode = new Node(userId, userAccount);
+            if (cache.size() >= capacity) {
+                LOGGER.info("# Cache is FULL! Removing {} from cache...", end.userId);
+                cache.remove(end.userId); // remove LRU data from cache.
+                remove(end);
+                setHead(newNode);
+            } else {
+                setHead(newNode);
+            }
+            cache.put(userId, newNode);
+        }
+    }
+
+    public boolean contains(String userId) {
+        return cache.containsKey(userId);
+    }
+
+    public void remove(Node node) { /* ... */ }
+
+    public void setHead(Node node) { /* ... */ }
+
+    public void invalidate(String userId) { /* ... */ }
+
+    public boolean isFull() { /* ... */ }
+
+    public UserAccount getLruData() { /* ... */ }
+
+    public void clear() { /* ... */ }
+
+    public List<UserAccount> getCacheDataInListForm() { /* ... */ }
+
+    public void setCapacity(int newCapacity) { /* ... */ }
+}
+```
+
+The next layer we are going to look at is `CacheStore` which implements the different caching strategies.
+
+```java
+
+@Slf4j
+public class CacheStore {
+
+    private static final int CAPACITY = 3;
+    private static LruCache cache;
+    private final DbManager dbManager;
+
+    /* ... details omitted ... */
+
+    public UserAccount readThrough(final String userId) {
+        if (cache.contains(userId)) {
+            LOGGER.info("# Found in Cache!");
+            return cache.get(userId);
+        }
+        LOGGER.info("# Not found in cache! Go to DB!!");
+        UserAccount userAccount = dbManager.readFromDb(userId);
+        cache.set(userId, userAccount);
+        return userAccount;
+    }
+
+    public void writeThrough(final UserAccount userAccount) {
+        if (cache.contains(userAccount.getUserId())) {
+            dbManager.updateDb(userAccount);
+        } else {
+            dbManager.writeToDb(userAccount);
+        }
+        cache.set(userAccount.getUserId(), userAccount);
+    }
+
+    public void writeAround(final UserAccount userAccount) {
+        if (cache.contains(userAccount.getUserId())) {
+            dbManager.updateDb(userAccount);
+            // Cache data has been updated -- remove older
+            cache.invalidate(userAccount.getUserId());
+            // version from cache.
+        } else {
+            dbManager.writeToDb(userAccount);
+        }
+    }
+
+    public static void clearCache() {
+        if (cache != null) {
+            cache.clear();
+        }
+    }
+
+    public static void flushCache() {
+        LOGGER.info("# flushCache...");
+        Optional.ofNullable(cache)
+                .map(LruCache::getCacheDataInListForm)
+                .orElse(List.of())
+                .forEach(DbManager::updateDb);
+    }
+
+    /* ... omitted the implementation of other caching strategies ... */
+
+}
+```
+
+`AppManager` helps to bridge the gap in communication between the main class and the application's back-end. DB connection is initialized through this class. The chosen caching strategy/policy is also initialized here. Before the cache can be used, the size of the cache has to be set. Depending on the chosen caching policy, `AppManager` will call the appropriate function in the `CacheStore` class.
+
+```java
+
+@Slf4j
+public final class AppManager {
+
+    private static CachingPolicy cachingPolicy;
+    private final DbManager dbManager;
+    private final CacheStore cacheStore;
+
+    private AppManager() {
+    }
+
+    public void initDb() { /* ... */ }
+
+    public static void initCachingPolicy(CachingPolicy policy) { /* ... */ }
+
+    public static void initCacheCapacity(int capacity) { /* ... */ }
+
+    public UserAccount find(final String userId) {
+        LOGGER.info("Trying to find {} in cache", userId);
+        if (cachingPolicy == CachingPolicy.THROUGH
+                || cachingPolicy == CachingPolicy.AROUND) {
+            return cacheStore.readThrough(userId);
+        } else if (cachingPolicy == CachingPolicy.BEHIND) {
+            return cacheStore.readThroughWithWriteBackPolicy(userId);
+        } else if (cachingPolicy == CachingPolicy.ASIDE) {
+            return findAside(userId);
+        }
+        return null;
+    }
+
+    public void save(final UserAccount userAccount) {
+        LOGGER.info("Save record!");
+        if (cachingPolicy == CachingPolicy.THROUGH) {
+            cacheStore.writeThrough(userAccount);
+        } else if (cachingPolicy == CachingPolicy.AROUND) {
+            cacheStore.writeAround(userAccount);
+        } else if (cachingPolicy == CachingPolicy.BEHIND) {
+            cacheStore.writeBehind(userAccount);
+        } else if (cachingPolicy == CachingPolicy.ASIDE) {
+            saveAside(userAccount);
+        }
+    }
+
+    public static String printCacheContent() {
+        return CacheStore.print();
+    }
+
+    /* ... details omitted ... */
+}
+```
+
+Here is what we do in the main class of the application.
+
+```java
+
+@Slf4j
+public class App {
+
+    public static void main(final String[] args) {
+        boolean isDbMongo = isDbMongo(args);
+        if (isDbMongo) {
+            LOGGER.info("Using the Mongo database engine to run the application.");
+        } else {
+            LOGGER.info("Using the 'in Memory' database to run the application.");
+        }
+        App app = new App(isDbMongo);
+        app.useReadAndWriteThroughStrategy();
+        String splitLine = "==============================================";
+        LOGGER.info(splitLine);
+        app.useReadThroughAndWriteAroundStrategy();
+        LOGGER.info(splitLine);
+        app.useReadThroughAndWriteBehindStrategy();
+        LOGGER.info(splitLine);
+        app.useCacheAsideStategy();
+        LOGGER.info(splitLine);
+    }
+
+    public void useReadAndWriteThroughStrategy() {
+        LOGGER.info("# CachingPolicy.THROUGH");
+        appManager.initCachingPolicy(CachingPolicy.THROUGH);
+
+        var userAccount1 = new UserAccount("001", "John", "He is a boy.");
+
+        appManager.save(userAccount1);
+        LOGGER.info(appManager.printCacheContent());
+        appManager.find("001");
+        appManager.find("001");
+    }
+
+    public void useReadThroughAndWriteAroundStrategy() { /* ... */ }
+
+    public void useReadThroughAndWriteBehindStrategy() { /* ... */ }
+
+    public void useCacheAsideStrategy() { /* ... */ }
+}
+```
+
+## Class diagram
+
+![alt text](./etc/caching.png "Caching")
+
+## Applicability
+
+Use the Caching pattern when
+
+* Repetitious acquisition, initialization, and release of the same resource cause unnecessary performance overhead
+* In scenarios where the cost of recomputing or re-fetching data is significantly higher than storing and retrieving it from cache
+* For read-heavy applications with relatively static data or data that changes infrequently
+
+## Known Uses
+
+* Web page caching to reduce server load and improve response time
+* Database query caching to avoid repeated expensive SQL queries
+* Caching results of CPU-intensive computations
+* Content Delivery Networks (CDNs) for caching static resources like images, CSS, and JavaScript files closer to the end users
+
+## Consequences
+
+Benefits:
+
+* Improved Performance: Significantly reduces data access latency, leading to faster application performance
+* Reduced Load: Decreases the load on the underlying data source, which can lead to cost savings and increased longevity of the resource
+* Scalability: Enhances the scalability of applications by efficiently handling increases in load without proportional increases in resource utilization
+
+Trade-Offs:
+
+* Complexity: Introduces complexity in terms of cache invalidation, consistency, and synchronization
+* Resource Utilization: Requires additional memory or storage resources to maintain the cache
+* Stale Data: There's a risk of serving outdated data if the cache is not properly invalidated or updated when the underlying data changes
+
+## Related patterns
+
+* [Proxy](https://java-design-patterns.com/patterns/proxy/): Caching can be implemented using the Proxy pattern, where the proxy object intercepts requests and returns cached data if available
+* [Observer](https://java-design-patterns.com/patterns/observer/): Can be used to notify the cache when the underlying data changes, so that it can be updated or invalidated accordingly
+* [Decorator](https://java-design-patterns.com/patterns/decorator/): Can be used to add caching behavior to an existing object without modifying its code
+* [Strategy](https://java-design-patterns.com/patterns/strategy/): Different caching strategies can be implemented using the Strategy pattern, allowing the application to switch between them at runtime
+
+## Credits
+
+* [Write-through, write-around, write-back: Cache explained](http://www.computerweekly.com/feature/Write-through-write-around-write-back-Cache-explained)
+* [Read-Through, Write-Through, Write-Behind, and Refresh-Ahead Caching](https://docs.oracle.com/cd/E15357_01/coh.360/e15723/cache_rtwtwbra.htm#COHDG5177)
+* [Cache-Aside pattern](https://docs.microsoft.com/en-us/azure/architecture/patterns/cache-aside)
+* [Java EE 8 High Performance: Master techniques such as memory optimization, caching, concurrency, and multithreading to achieve maximum performance from your enterprise applications](https://www.amazon.com/gp/product/178847306X/ref=as_li_qf_asin_il_tl?ie=UTF8&tag=javadesignpat-20&creative=9325&linkCode=as2&creativeASIN=178847306X&linkId=e948720055599f248cdac47da9125ff4)
+* [Java Performance: In-Depth Advice for Tuning and Programming Java 8, 11, and Beyond](https://www.amazon.com/gp/product/1492056111/ref=as_li_qf_asin_il_tl?ie=UTF8&tag=javadesignpat-20&creative=9325&linkCode=as2&creativeASIN=1492056111&linkId=7e553581559b9ec04221259e52004b08)
+* [Effective Java](https://www.amazon.com/gp/product/B078H61SCH/ref=as_li_qf_asin_il_tl?ie=UTF8&tag=javadesignpat-20&creative=9325&linkCode=as2&creativeASIN=B078H61SCH&linkId=f06607a0b48c76541ef19c5b8b9e7882)
+* [Java Performance: The Definitive Guide: Getting the Most Out of Your Code](https://www.amazon.com/gp/product/1449358454/ref=as_li_qf_asin_il_tl?ie=UTF8&tag=javadesignpat-20&creative=9325&linkCode=as2&creativeASIN=1449358454&linkId=475c18363e350630cc0b39ab681b2687)
+* [Patterns of Enterprise Application Architecture](https://amzn.to/3PMAHRZ)
+* [Scalable Internet Architectures](https://amzn.to/48V3ni9)
+* [High Performance Browser Networking](https://amzn.to/3TiNNY4)

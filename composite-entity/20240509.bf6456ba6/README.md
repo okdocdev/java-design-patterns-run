@@ -1,24 +1,155 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Composite Entity
+category: Structural
+language: en
+tag:
+    - Client-server
+    - Data access
+    - Enterprise patterns
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Coarse-Grained Entity
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Composite Entity design pattern is aimed at managing a set of interrelated persistent objects as if they were a single entity. It is commonly used in the context of Enterprise JavaBeans (EJB) and similar enterprise frameworks to represent graph-based data structures within business models, enabling clients to treat them as a single unit.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> For a console, there may be many interfaces that need to be managed and controlled. Using the composite entity pattern, dependent objects such as messages and signals can be combined and controlled using a single object.
+
+In plain words
+
+> Composite entity pattern allows a set of related objects to be represented and managed by a unified object.
+
+**Programmatic Example**
+
+We need a generic solution for the problem. To achieve this, let's introduce a generic Composite Entity Pattern.
+
+```java
+public abstract class DependentObject<T> {
+
+    T data;
+
+    public void setData(T message) {
+        this.data = message;
+    }
+
+    public T getData() {
+        return data;
+    }
+}
+
+public abstract class CoarseGrainedObject<T> {
+
+    DependentObject<T>[] dependentObjects;
+
+    public void setData(T... data) {
+        IntStream.range(0, data.length).forEach(i -> dependentObjects[i].setData(data[i]));
+    }
+
+    public T[] getData() {
+        return (T[]) Arrays.stream(dependentObjects).map(DependentObject::getData).toArray();
+    }
+}
+
+```
+
+The specialized composite entity `console` inherit from this base class as follows.
+
+```java
+public class MessageDependentObject extends DependentObject<String> {
+
+}
+
+public class SignalDependentObject extends DependentObject<String> {
+
+}
+
+public class ConsoleCoarseGrainedObject extends CoarseGrainedObject<String> {
+
+    @Override
+    public String[] getData() {
+        super.getData();
+        return new String[] {
+                dependentObjects[0].getData(), dependentObjects[1].getData()
+        };
+    }
+
+    public void init() {
+        dependentObjects = new DependentObject[] {
+                new MessageDependentObject(), new SignalDependentObject()};
+    }
+}
+
+public class CompositeEntity {
+
+    private final ConsoleCoarseGrainedObject console = new ConsoleCoarseGrainedObject();
+
+    public void setData(String message, String signal) {
+        console.setData(message, signal);
+    }
+
+    public String[] getData() {
+        return console.getData();
+    }
+}
+```
+
+Now managing the assignment of message and signal objects with the composite entity `console`.
+
+```java
+var console=new CompositeEntity();
+        console.init();
+        console.setData("No Danger","Green Light");
+        Arrays.stream(console.getData()).forEach(LOGGER::info);
+        console.setData("Danger","Red Light");
+        Arrays.stream(console.getData()).forEach(LOGGER::info);
+```
+
+## Class diagram
+
+![alt text](./etc/composite_entity.urm.png "Composite Entity Pattern")
+
+## Applicability
+
+* Useful in enterprise applications where business objects are complex and involve various interdependent objects.
+* Ideal for scenarios where clients need to work with a unified interface to a set of objects rather than individual entities.
+* Applicable in systems that require a simplified view of a complex data model for external clients or services.
+
+## Known Uses
+
+* Enterprise applications with complex business models, particularly those using EJB or similar enterprise frameworks.
+* Systems requiring abstraction over complex database schemas to simplify client interactions.
+* Applications that need to enforce consistency or transactions across multiple objects in a business entity.
+
+## Consequences
+
+Benefits:
+
+* Simplifies client interactions with complex entity models by providing a unified interface.
+* Enhances reusability and maintainability of the business layer by decoupling client code from the complex internals of business entities.
+* Facilitates easier transaction management and consistency enforcement across a set of related objects.
+
+Trade-offs:
+
+* May introduce a level of indirection that could impact performance.
+* Can lead to overly coarse-grained interfaces that might not be as flexible for all client needs.
+* Requires careful design to avoid bloated composite entities that are difficult to manage.
+
+## Related Patterns
+
+* [Decorator](https://java-design-patterns.com/patterns/decorator/): For dynamically adding behavior to individual objects within the composite entity without affecting the structure.
+* [Facade](https://java-design-patterns.com/patterns/facade/): Provides a simplified interface to a complex subsystem, similar to how a composite entity simplifies access to a set of objects.
+* [Flyweight](https://java-design-patterns.com/patterns/flyweight/): Useful for managing shared objects within a composite entity to reduce memory footprint.
+
+## Credits
+
+* [Composite Entity Pattern in wikipedia](https://en.wikipedia.org/wiki/Composite_entity_pattern)
+* [Core J2EE Patterns: Best Practices and Design Strategies](https://amzn.to/4cAbDap)
+* [Enterprise Patterns and MDA: Building Better Software with Archetype Patterns and UML](https://amzn.to/49mslqS)
+* [Patterns of Enterprise Application Architecture](https://amzn.to/3xjKdpe)

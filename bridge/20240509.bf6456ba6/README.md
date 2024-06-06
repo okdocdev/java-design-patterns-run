@@ -1,24 +1,244 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Bridge
+category: Structural
+language: en
+tag:
+    - Decoupling
+    - Extensibility
+    - Gang of Four
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+Handle/Body
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+Decouple an abstraction from its implementation so that the two can vary independently.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real-world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> Consider you have a weapon with different enchantments, and you are supposed to allow mixing different weapons with different enchantments. What would you do? Create multiple copies of each of the weapons for each of the enchantments or would you just create separate enchantment and set it for the weapon as needed? Bridge pattern allows you to do the second.
+
+In Plain Words
+
+> Bridge pattern is about preferring composition to inheritance. Implementation details are pushed from a hierarchy to another object with a separate hierarchy.
+
+Wikipedia says
+
+> The bridge pattern is a design pattern used in software engineering that is meant to "decouple an abstraction from its implementation so that the two can vary independently"
+
+**Programmatic Example**
+
+Translating our weapon example from above. Here we have the `Weapon` hierarchy:
+
+```java
+public interface Weapon {
+    void wield();
+
+    void swing();
+
+    void unwield();
+
+    Enchantment getEnchantment();
+}
+
+public class Sword implements Weapon {
+
+    private final Enchantment enchantment;
+
+    public Sword(Enchantment enchantment) {
+        this.enchantment = enchantment;
+    }
+
+    @Override
+    public void wield() {
+        LOGGER.info("The sword is wielded.");
+        enchantment.onActivate();
+    }
+
+    @Override
+    public void swing() {
+        LOGGER.info("The sword is swung.");
+        enchantment.apply();
+    }
+
+    @Override
+    public void unwield() {
+        LOGGER.info("The sword is unwielded.");
+        enchantment.onDeactivate();
+    }
+
+    @Override
+    public Enchantment getEnchantment() {
+        return enchantment;
+    }
+}
+
+public class Hammer implements Weapon {
+
+    private final Enchantment enchantment;
+
+    public Hammer(Enchantment enchantment) {
+        this.enchantment = enchantment;
+    }
+
+    @Override
+    public void wield() {
+        LOGGER.info("The hammer is wielded.");
+        enchantment.onActivate();
+    }
+
+    @Override
+    public void swing() {
+        LOGGER.info("The hammer is swung.");
+        enchantment.apply();
+    }
+
+    @Override
+    public void unwield() {
+        LOGGER.info("The hammer is unwielded.");
+        enchantment.onDeactivate();
+    }
+
+    @Override
+    public Enchantment getEnchantment() {
+        return enchantment;
+    }
+}
+```
+
+Here's the separate enchantment hierarchy:
+
+```java
+public interface Enchantment {
+    void onActivate();
+
+    void apply();
+
+    void onDeactivate();
+}
+
+public class FlyingEnchantment implements Enchantment {
+
+    @Override
+    public void onActivate() {
+        LOGGER.info("The item begins to glow faintly.");
+    }
+
+    @Override
+    public void apply() {
+        LOGGER.info("The item flies and strikes the enemies finally returning to owner's hand.");
+    }
+
+    @Override
+    public void onDeactivate() {
+        LOGGER.info("The item's glow fades.");
+    }
+}
+
+public class SoulEatingEnchantment implements Enchantment {
+
+    @Override
+    public void onActivate() {
+        LOGGER.info("The item spreads bloodlust.");
+    }
+
+    @Override
+    public void apply() {
+        LOGGER.info("The item eats the soul of enemies.");
+    }
+
+    @Override
+    public void onDeactivate() {
+        LOGGER.info("Bloodlust slowly disappears.");
+    }
+}
+```
+
+Here are both hierarchies in action:
+
+```java
+LOGGER.info("The knight receives an enchanted sword.");
+        var enchantedSword=new Sword(new SoulEatingEnchantment());
+        enchantedSword.wield();
+        enchantedSword.swing();
+        enchantedSword.unwield();
+
+        LOGGER.info("The valkyrie receives an enchanted hammer.");
+        var hammer=new Hammer(new FlyingEnchantment());
+        hammer.wield();
+        hammer.swing();
+        hammer.unwield();
+```
+
+Here's the console output.
+
+```
+The knight receives an enchanted sword.
+The sword is wielded.
+The item spreads bloodlust.
+The sword is swung.
+The item eats the soul of enemies.
+The sword is unwielded.
+Bloodlust slowly disappears.
+The valkyrie receives an enchanted hammer.
+The hammer is wielded.
+The item begins to glow faintly.
+The hammer is swung.
+The item flies and strikes the enemies finally returning to owner's hand.
+The hammer is unwielded.
+The item's glow fades.
+```
+
+## Class diagram
+
+![alt text](./etc/bridge.urm.png "Bridge class diagram")
+
+## Applicability
+
+Use the Bridge pattern when
+
+* You want to avoid a permanent binding between an abstraction and its implementation. This might be the case, for example, when the implementation must be selected or switched at run-time.
+* Both the abstractions and their implementations should be extensible by subclassing. In this case, the Bridge pattern lets you combine the different abstractions and implementations and extend them independently.
+* Changes in the implementation of an abstraction should have no impact on clients; that is, their code should not have to be recompiled.
+* You have a proliferation of classes. Such a class hierarchy indicates the need for splitting an object into two parts. Rumbaugh uses the term "nested generalizations" to refer to such class hierarchies.
+* You want to share an implementation among multiple objects (perhaps using reference counting), and this fact should be hidden from the client. A simple example is Coplien's String class, in which multiple objects can share the same string representation.
+
+## Known uses
+
+* GUI Frameworks where the abstraction is the window, and the implementation could be the underlying OS windowing system.
+* Database Drivers where the abstraction is a generic database interface, and the implementations are database-specific drivers.
+* Device Drivers where the abstraction is the device-independent code, and the implementation is the device-dependent code.
+
+## Consequences
+
+Benefits:
+
+* Decoupling Interface and Implementation: The Bridge pattern enhances modularity by separating the interface (the high-level operations) from the implementation (the low-level operations).
+* Improved Extensibility: You can extend the abstraction and implementation hierarchies independently.
+* Hiding Implementation Details: Clients only see the abstraction's interface, not its implementation.
+
+Trade-offs:
+
+* Increased Complexity: The pattern can complicate the system architecture and code, especially for clients unfamiliar with the pattern.
+* Runtime Overhead: The extra layer of abstraction can introduce a performance penalty, although it is often negligible in practice.
+
+## Related Patterns
+
+* [Adapter](https://java-design-patterns.com/patterns/adapter/): The Adapter pattern is used to provide a different interface to an object, while the Bridge pattern is used to separate an object's interface from its implementation.
+* [Strategy](https://java-design-patterns.com/patterns/strategy/): The Strategy pattern is like the Bridge pattern, but with a different intent. Both patterns are based on composition: Strategy uses composition to change the behavior of a class, while Bridge uses composition to separate an abstraction from its implementation.
+* [Abstract Factory](https://java-design-patterns.com/patterns/abstract-factory/): The Abstract Factory pattern can be used along with the Bridge pattern to create platforms that are independent of the concrete classes used to create their objects.
+* [Composite](https://java-design-patterns.com/patterns/composite/): The Bridge pattern is often used with the Composite pattern to model the implementation details of a component.
+
+## Tutorials
+
+* [Bridge Pattern Tutorial](https://www.journaldev.com/1491/bridge-design-pattern-java)
+
+## Credits
+
+* [Design Patterns: Elements of Reusable Object-Oriented Software](https://www.amazon.com/gp/product/0201633612/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0201633612&linkCode=as2&tag=javadesignpat-20&linkId=675d49790ce11db99d90bde47f1aeb59)
+* [Head First Design Patterns: A Brain-Friendly Guide](https://www.amazon.com/gp/product/0596007124/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0596007124&linkCode=as2&tag=javadesignpat-20&linkId=6b8b6eea86021af6c8e3cd3fc382cb5b)
+* [Pattern-Oriented Software Architecture Volume 1: A System of Patterns](https://amzn.to/3TEnhtl)

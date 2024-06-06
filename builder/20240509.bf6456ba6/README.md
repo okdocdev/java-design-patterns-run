@@ -1,24 +1,166 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Builder
+category: Creational
+language: en
+tag:
+    - Gang of Four
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Intent
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+Separate the construction of a complex object from its representation so that the same construction process can create different representations.
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Explanation
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+Real-world example
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+> Imagine a character generator for a role-playing game. The easiest option is to let the computer create the character for you. If you want to manually select the character details like profession, gender, hair color, etc. the character generation becomes a step-by-step process that completes when all the selections are ready.
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+In plain words
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> Allows you to create different flavors of an object while avoiding constructor pollution. Useful when there could be several flavors of an object. Or when there are a lot of steps involved in creation of an object.
+
+Wikipedia says
+
+> The builder pattern is an object creation software design pattern with the intentions of finding a solution to the telescoping constructor antipattern.
+
+Having said that let me add a bit about what telescoping constructor antipattern is. At one point or the other, we have all seen a constructor like below:
+
+```java
+public Hero(Profession profession,String name,HairType hairType,HairColor hairColor,Armor armor,Weapon weapon){
+        }
+```
+
+As you can see the number of constructor parameters can quickly get out of hand, and it may become difficult to understand the arrangement of parameters. Plus this parameter list could keep on growing if you would want to add more options in the future. This is called telescoping constructor antipattern.
+
+**Programmatic Example**
+
+The sane alternative is to use the Builder pattern. First of all, we have our hero that we want to create:
+
+```java
+public final class Hero {
+    private final Profession profession;
+    private final String name;
+    private final HairType hairType;
+    private final HairColor hairColor;
+    private final Armor armor;
+    private final Weapon weapon;
+
+    private Hero(Builder builder) {
+        this.profession = builder.profession;
+        this.name = builder.name;
+        this.hairColor = builder.hairColor;
+        this.hairType = builder.hairType;
+        this.weapon = builder.weapon;
+        this.armor = builder.armor;
+    }
+}
+```
+
+Then we have the builder:
+
+```java
+  public static class Builder {
+    private final Profession profession;
+    private final String name;
+    private HairType hairType;
+    private HairColor hairColor;
+    private Armor armor;
+    private Weapon weapon;
+
+    public Builder(Profession profession, String name) {
+        if (profession == null || name == null) {
+            throw new IllegalArgumentException("profession and name can not be null");
+        }
+        this.profession = profession;
+        this.name = name;
+    }
+
+    public Builder withHairType(HairType hairType) {
+        this.hairType = hairType;
+        return this;
+    }
+
+    public Builder withHairColor(HairColor hairColor) {
+        this.hairColor = hairColor;
+        return this;
+    }
+
+    public Builder withArmor(Armor armor) {
+        this.armor = armor;
+        return this;
+    }
+
+    public Builder withWeapon(Weapon weapon) {
+        this.weapon = weapon;
+        return this;
+    }
+
+    public Hero build() {
+        return new Hero(this);
+    }
+}
+```
+
+Then it can be used as:
+
+```java
+var mage=new Hero.Builder(Profession.MAGE,"Riobard").withHairColor(HairColor.BLACK).withWeapon(Weapon.DAGGER).build();
+```
+
+## Class diagram
+
+![alt text](./etc/builder.urm.png "Builder class diagram")
+
+## Applicability
+
+Use the Builder pattern when
+
+* The algorithm for creating a complex object should be independent of the parts that make up the object and how they're assembled
+* The construction process must allow different representations for the object that's constructed
+* It's particularly useful when a product requires a lot of steps to be created and when these steps need to be executed in a specific sequence
+
+## Known Uses
+
+* Java.lang.StringBuilder
+* Java.nio.ByteBuffer as well as similar buffers such as FloatBuffer, IntBuffer, and others
+* javax.swing.GroupLayout.Group#addComponent()
+
+## Consequences
+
+Benefits:
+
+* More control over the construction process compared to other creational patterns
+* Supports constructing objects step-by-step, defer construction steps or run steps recursively
+* Can construct objects that require a complex assembly of sub-objects. The final product is detached from the parts that make it up, as well as their assembly process
+* Single Responsibility Principle. You can isolate complex construction code from the business logic of the product
+
+Trade-offs:
+
+* The overall complexity of the code can increase since the pattern requires creating multiple new classes
+
+## Tutorials
+
+* [Refactoring Guru](https://refactoring.guru/design-patterns/builder)
+* [Oracle Blog](https://blogs.oracle.com/javamagazine/post/exploring-joshua-blochs-builder-design-pattern-in-java)
+* [Journal Dev](https://www.journaldev.com/1425/builder-design-pattern-in-java)
+
+## Known uses
+
+* [java.lang.StringBuilder](http://docs.oracle.com/javase/8/docs/api/java/lang/StringBuilder.html)
+* [java.nio.ByteBuffer](http://docs.oracle.com/javase/8/docs/api/java/nio/ByteBuffer.html#put-byte-) as well as similar buffers such as FloatBuffer, IntBuffer and so on.
+* [java.lang.StringBuffer](http://docs.oracle.com/javase/8/docs/api/java/lang/StringBuffer.html#append-boolean-)
+* All implementations of [java.lang.Appendable](http://docs.oracle.com/javase/8/docs/api/java/lang/Appendable.html)
+* [Apache Camel builders](https://github.com/apache/camel/tree/0e195428ee04531be27a0b659005e3aa8d159d23/camel-core/src/main/java/org/apache/camel/builder)
+* [Apache Commons Option.Builder](https://commons.apache.org/proper/commons-cli/apidocs/org/apache/commons/cli/Option.Builder.html)
+
+## Related patterns
+
+* [Step Builder](https://java-design-patterns.com/patterns/step-builder/) is a variation of the Builder pattern that generates a complex object using a step-by-step approach. The Step Builder pattern is a good choice when you need to build an object with a large number of optional parameters, and you want to avoid the telescoping constructor antipattern.
+
+## Credits
+
+* [Design Patterns: Elements of Reusable Object-Oriented Software](https://www.amazon.com/gp/product/0201633612/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0201633612&linkCode=as2&tag=javadesignpat-20&linkId=675d49790ce11db99d90bde47f1aeb59)
+* [Effective Java](https://www.amazon.com/gp/product/0134685997/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0134685997&linkCode=as2&tag=javadesignpat-20&linkId=4e349f4b3ff8c50123f8147c828e53eb)
+* [Head First Design Patterns: A Brain-Friendly Guide](https://www.amazon.com/gp/product/0596007124/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0596007124&linkCode=as2&tag=javadesignpat-20&linkId=6b8b6eea86021af6c8e3cd3fc382cb5b)
+* [Refactoring to Patterns](https://www.amazon.com/gp/product/0321213351/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0321213351&linkCode=as2&tag=javadesignpat-20&linkId=2a76fcb387234bc71b1c61150b3cc3a7)

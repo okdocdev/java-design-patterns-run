@@ -1,24 +1,149 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Delegation
+category: Behavioral
+language: en
+tag:
+    - Delegation
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Helper
+* Surrogate
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Delegation pattern in Java allows an object to delegate one or more tasks to a helper object. It is a technique where an object expresses certain behavior but actually delegates responsibility for implementing that behavior to an associated helper object.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real-world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> In a restaurant, the head chef delegates tasks to sous-chefs: one manages grilling, another handles salads, and a third is in charge of desserts. Each sous-chef specializes in their area, allowing the head chef to focus on overall kitchen management. This mirrors the Delegation design pattern, where a main object delegates specific tasks to helper objects, each expert in their domain.
+
+Wikipedia says
+
+> In object-oriented programming, delegation refers to evaluating a member (property or method) of one object (the receiver) in the context of another original object (the sender). Delegation can be done explicitly, by passing the sending object to the receiving object, which can be done in any object-oriented language; or implicitly, by the member lookup rules of the language, which requires language support for the feature.
+
+**Programmatic Example**
+
+We have an interface `Printer` and three implementations `CanonPrinter`, `EpsonPrinter` and `HpPrinter`.
+
+```java
+public interface Printer {
+    void print(final String message);
+}
+
+@Slf4j
+public class CanonPrinter implements Printer {
+    @Override
+    public void print(String message) {
+        LOGGER.info("Canon Printer : {}", message);
+    }
+}
+
+@Slf4j
+public class EpsonPrinter implements Printer {
+    @Override
+    public void print(String message) {
+        LOGGER.info("Epson Printer : {}", message);
+    }
+}
+
+@Slf4j
+public class HpPrinter implements Printer {
+    @Override
+    public void print(String message) {
+        LOGGER.info("HP Printer : {}", message);
+    }
+}
+```
+
+The `PrinterController` can be used as a `Printer` by delegating any work handled by this
+interface to an object implementing it.
+
+```java
+public class PrinterController implements Printer {
+
+    private final Printer printer;
+
+    public PrinterController(Printer printer) {
+        this.printer = printer;
+    }
+
+    @Override
+    public void print(String message) {
+        printer.print(message);
+    }
+}
+```
+
+Now on the client code printer controllers can print messages differently depending on the
+object they're delegating that work to.
+
+```java
+public class App {
+
+    private static final String MESSAGE_TO_PRINT = "hello world";
+
+    public static void main(String[] args) {
+        var hpPrinterController = new PrinterController(new HpPrinter());
+        var canonPrinterController = new PrinterController(new CanonPrinter());
+        var epsonPrinterController = new PrinterController(new EpsonPrinter());
+
+        hpPrinterController.print(MESSAGE_TO_PRINT);
+        canonPrinterController.print(MESSAGE_TO_PRINT);
+        epsonPrinterController.print(MESSAGE_TO_PRINT);
+    }
+}
+```
+
+Program output:
+
+```
+HP Printer:hello world
+Canon Printer:hello world
+Epson Printer:hello world
+```
+
+## Class diagram
+
+![Delegate class diagram](./etc/delegation.png "Delegate")
+
+## Applicability
+
+* When you want to pass responsibility from one class to another without inheritance.
+* To achieve composition-based reuse instead of inheritance-based.
+* When you need to use several interchangeable helper classes at runtime.
+
+## Known Uses
+
+* Java's java.awt.event package, where listeners are often used to handle events.
+* Wrapper classes in Java's Collections Framework (java.util.Collections), which delegate to other collection objects.
+* In Spring Framework, delegation is used extensively in the IoC container where beans delegate tasks to other beans.
+
+## Consequences
+
+Benefits:
+
+* Reduces subclassing: Objects can delegate operations to different objects and change them at runtime, reducing the need for subclassing.
+* Encourages reuse: Delegation promotes the reuse of the helper object's code.
+* Increases flexibility: By delegating tasks to helper objects, you can change the behavior of your classes at runtime.
+
+Trade-offs:
+
+* Runtime Overhead: Delegation can introduce additional layers of indirection, which may result in slight performance costs.
+* Complexity: The design can become more complicated since it involves additional classes and interfaces to manage delegation.
+
+## Related Patterns
+
+* [Composite](https://java-design-patterns.com/patterns/composite/): Delegation can be used within a composite pattern to delegate component-specific behavior to child components.
+* [Strategy](https://java-design-patterns.com/patterns/strategy/): Delegation is often used in the strategy pattern where a context object delegates tasks to a strategy object.
+* https://java-design-patterns.com/patterns/proxy/: The proxy pattern is a form of delegation where a proxy object controls access to another object, which it delegates work to.
+
+## Credits
+
+* [Effective Java](https://amzn.to/4aGE7gX)
+* [Head First Design Patterns](https://amzn.to/3J9tuaB)
+* [Refactoring: Improving the Design of Existing Code](https://amzn.to/3VOcRsw)
+* [Delegate Pattern: Wikipedia ](https://en.wikipedia.org/wiki/Delegation_pattern)

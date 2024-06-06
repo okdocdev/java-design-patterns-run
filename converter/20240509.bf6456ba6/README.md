@@ -1,24 +1,132 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Converter
+category: Structural
+language: en
+tag:
+    - Compatibility
+    - Data transformation
+    - Object mapping
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Mapper
+* Translator
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The purpose of the Converter pattern is to provide a generic, common way of bidirectional conversion between corresponding types, allowing a clean implementation in which the types do not need to be aware of each other. Moreover, the Converter pattern introduces bidirectional collection mapping, reducing a boilerplate code to minimum.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> In real world applications it is often the case that database layer consists of entities that need to be mapped into DTOs for use on the business logic layer. Similar mapping is done for potentially huge amount of classes, and we need a generic way to achieve this.
+
+In plain words
+
+> Converter pattern makes it easy to map instances of one class into instances of another class.
+
+**Programmatic Example**
+
+We need a generic solution for the mapping problem. To achieve this, let's introduce a generic converter.
+
+```java
+public class Converter<T, U> {
+
+    private final Function<T, U> fromDto;
+    private final Function<U, T> fromEntity;
+
+    public Converter(final Function<T, U> fromDto, final Function<U, T> fromEntity) {
+        this.fromDto = fromDto;
+        this.fromEntity = fromEntity;
+    }
+
+    public final U convertFromDto(final T dto) {
+        return fromDto.apply(dto);
+    }
+
+    public final T convertFromEntity(final U entity) {
+        return fromEntity.apply(entity);
+    }
+
+    public final List<U> createFromDtos(final Collection<T> dtos) {
+        return dtos.stream().map(this::convertFromDto).collect(Collectors.toList());
+    }
+
+    public final List<T> createFromEntities(final Collection<U> entities) {
+        return entities.stream().map(this::convertFromEntity).collect(Collectors.toList());
+    }
+}
+```
+
+The specialized converters inherit from this base class as follows.
+
+```java
+public class UserConverter extends Converter<UserDto, User> {
+
+    public UserConverter() {
+        super(UserConverter::convertToEntity, UserConverter::convertToDto);
+    }
+
+    private static UserDto convertToDto(User user) {
+        return new UserDto(user.firstName(), user.lastName(), user.active(), user.userId());
+    }
+
+    private static User convertToEntity(UserDto dto) {
+        return new User(dto.firstName(), dto.lastName(), dto.active(), dto.email());
+    }
+}
+```
+
+Now mapping between `User` and `UserDto` becomes trivial.
+
+```java
+var userConverter=new UserConverter();
+        var dtoUser=new UserDto("John","Doe",true,"whatever[at]wherever.com");
+        var user=userConverter.convertFromDto(dtoUser);
+```
+
+## Class diagram
+
+![alt text](./etc/converter.png "Converter Pattern")
+
+## Applicability
+
+Use the Converter Pattern in the following situations:
+
+* When there are types that logically correspond with each other, and there is a need to convert between them.
+* In applications that interact with external systems or services that require data in a specific format.
+* For legacy systems integration where data models differ significantly from newer systems.
+* When aiming to encapsulate conversion logic to promote single responsibility and cleaner code.
+
+## Known Uses
+
+* Data Transfer Objects (DTOs) conversions in multi-layered applications.
+* Adapting third-party data structures or API responses to internal models.
+* ORM (Object-Relational Mapping) frameworks for mapping between database records and domain objects.
+* Microservices architecture for data exchange between different services.
+
+## Consequences
+
+Benefits:
+
+* Separation of Concerns: Encapsulates conversion logic in a single component, keeping the rest of the application unaware of the conversion details.
+* Reusability: Converter components can be reused across the application or even in different applications.
+* Flexibility: Makes it easy to add new conversions without impacting existing code, adhering to the [Open/Closed Principle](https://java-design-patterns.com/principles/#open-closed-principle).
+* Interoperability: Facilitates communication between different systems or application layers by translating data formats.
+
+Trade-offs:
+
+* Overhead: Introducing converters can add complexity and potential performance overhead, especially in systems with numerous data formats.
+* Duplication: There's a risk of duplicating model definitions if not carefully managed, leading to increased maintenance.
+
+## Related Patterns
+
+* [Adapter](https://java-design-patterns.com/patterns/adapter/): Similar in intent to adapting interfaces, but Converter focuses on data models.
+* [Facade](https://java-design-patterns.com/patterns/facade/): Provides a simplified interface to a complex system, which might involve data conversion.
+* [Strategy](https://java-design-patterns.com/patterns/strategy/): Converters can use different strategies for conversion, especially when multiple formats are involved.
+
+## Credits
+
+* [Converter Pattern in Java 8](http://www.xsolve.pl/blog/converter-pattern-in-java-8/)

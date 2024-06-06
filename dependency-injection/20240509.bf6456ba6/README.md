@@ -1,24 +1,134 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Dependency Injection
+category: Structural
+language: en
+tag:
+    - Decoupling
+    - Dependency management
+    - Inversion of control
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Inversion of Control (IoC)
+* Dependency Inversion
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+Dependency Injection is a software design pattern in which one or more dependencies (or services) are injected, or passed by reference, into a dependent object (or client) and are made part of the client's state. The pattern separates the creation of a client's dependencies from its own behavior, which allows program designs to be loosely coupled and to follow the [Inversion of Control](https://java-design-patterns.com/principles/#inversion-of-control) and [Single Responsibility](https://java-design-patterns.com/principles/#single-responsibility-principle) principles.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> The old wizard likes to fill his pipe and smoke tobacco once in a while. However, he doesn't want to depend on a single tobacco brand only but likes to be able to enjoy them all interchangeably.
+
+In plain words
+
+> Dependency Injection separates creation of client's dependencies from its own behavior.
+
+Wikipedia says
+
+> In software engineering, dependency injection is a technique in which an object receives other objects that it depends on. These other objects are called dependencies.
+
+**Programmatic Example**
+
+Let's first introduce the `Tobacco` interface and the concrete brands.
+
+```java
+
+@Slf4j
+public abstract class Tobacco {
+
+    public void smoke(Wizard wizard) {
+        LOGGER.info("{} smoking {}", wizard.getClass().getSimpleName(),
+                this.getClass().getSimpleName());
+    }
+}
+
+public class SecondBreakfastTobacco extends Tobacco {
+}
+
+public class RivendellTobacco extends Tobacco {
+}
+
+public class OldTobyTobacco extends Tobacco {
+}
+```
+
+Next here's the `Wizard` class hierarchy.
+
+```java
+public interface Wizard {
+
+    void smoke();
+}
+
+public class AdvancedWizard implements Wizard {
+
+    private final Tobacco tobacco;
+
+    public AdvancedWizard(Tobacco tobacco) {
+        this.tobacco = tobacco;
+    }
+
+    @Override
+    public void smoke() {
+        tobacco.smoke(this);
+    }
+}
+```
+
+And lastly we can show how easy it is to give the old wizard any brand of tobacco.
+
+```java
+var advancedWizard=new AdvancedWizard(new SecondBreakfastTobacco());
+advancedWizard.smoke();
+```
+
+## Class diagram
+
+![Dependency Injection](./etc/dependency-injection.png "Dependency Injection")
+
+## Applicability
+
+* When aiming to reduce the coupling between classes and increase the modularity of the application.
+* In scenarios where the object creation process is complex or should be separated from the class usage.
+* In applications requiring easier unit testing by allowing dependencies to be mocked or stubbed.
+* Within frameworks or libraries that manage object lifecycles and dependencies, such as Spring or Jakarta EE (formerly Java EE).
+
+## Known Uses
+
+* Frameworks like Spring, Jakarta EE, and Google Guice use DI extensively to manage component lifecycles and dependencies.
+* Desktop and web applications that require flexible architecture with easily interchangeable components.
+
+## Consequences
+
+Benefits:
+
+* Enhances modularity and separation of concerns.
+* Simplifies unit testing by allowing for easy mocking of dependencies.
+* Increases flexibility and maintainability by promoting loose coupling.
+
+Trade-offs:
+
+* Can introduce complexity in the configuration, especially in large projects.
+* Might increase the learning curve for developers unfamiliar with DI patterns or frameworks.
+* Requires careful management of object lifecycles and scopes.
+
+## Related Patterns
+
+* [Factory Method](https://java-design-patterns.com/patterns/factory-method/) and [Abstract Factory](https://java-design-patterns.com/patterns/abstract-factory/): Used to create instances that the DI mechanism will inject.
+* [Service Locator](https://java-design-patterns.com/patterns/service-locator/): An alternative to DI for locating services or components, though it does not decouple the lookup process as effectively as DI.
+* [Singleton](https://java-design-patterns.com/patterns/singleton/): Often used in conjunction with DI to provide a single instance of a service across the application.
+
+## Credits
+
+* [Spring in Action](https://amzn.to/4asnpSG)
+* [Dependency Injection: Design patterns using Spring and Guice](https://amzn.to/4aMyHkI)
+* [Java Design Pattern Essentials](https://amzn.to/3xtPPxa)
+* [Pro Java EE Spring Patterns: Best Practices and Design Strategies Implementing Java EE Patterns with the Spring Framework](https://amzn.to/3J6Teoh)
+* [Dependency Injection Principles, Practices, and Patterns](https://www.amazon.com/gp/product/161729473X/ref=as_li_qf_asin_il_tl?ie=UTF8&tag=javadesignpat-20&creative=9325&linkCode=as2&creativeASIN=161729473X&linkId=57079257a5c7d33755493802f3b884bd)
+* [Clean Code: A Handbook of Agile Software Craftsmanship](https://www.amazon.com/gp/product/0132350882/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0132350882&linkCode=as2&tag=javadesignpat-20&linkId=2c390d89cc9e61c01b9e7005c7842871)
+* [Java 9 Dependency Injection: Write loosely coupled code with Spring 5 and Guice](https://www.amazon.com/gp/product/1788296257/ref=as_li_tl?ie=UTF8&tag=javadesignpat-20&camp=1789&creative=9325&linkCode=as2&creativeASIN=1788296257&linkId=4e9137a3bf722a8b5b156cce1eec0fc1)
+* [Google Guice: Agile Lightweight Dependency Injection Framework](https://www.amazon.com/gp/product/1590599977/ref=as_li_qf_asin_il_tl?ie=UTF8&tag=javadesignpat-20&creative=9325&linkCode=as2&creativeASIN=1590599977&linkId=3b10c90b7ba480a1b7777ff38000f956)

@@ -1,24 +1,118 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Callback
+category: Functional
+language: en
+tag:
+    - Asynchronous
+    - Decoupling
+    - Idiom
+    - Reactive
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Intent
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+Callback is a piece of executable code that is passed as an argument to other code, which is expected to call back (execute) the argument at some convenient time.
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Also known as
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+* Event-Subscription
+* Listener
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> We need to be notified after the executing task has finished. We pass a callback method for the executor and wait for it to call back on us.
+
+In plain words
+
+> Callback is a method passed to an executor which will be called at a defined moment.
+
+Wikipedia says
+
+> In computer programming, a callback, also known as a "call-after" function, is any executable code that is passed as an argument to other code; that other code is expected to call back (execute) the argument at a given time.
+
+**Programmatic Example**
+
+Callback is a simple interface with single method.
+
+```java
+public interface Callback {
+
+    void call();
+}
+```
+
+Next we define a task that will execute the callback after the task execution has finished.
+
+```java
+public abstract class Task {
+
+    final void executeWith(Callback callback) {
+        execute();
+        Optional.ofNullable(callback).ifPresent(Callback::call);
+    }
+
+    public abstract void execute();
+}
+
+@Slf4j
+public final class SimpleTask extends Task {
+
+    @Override
+    public void execute() {
+        LOGGER.info("Perform some important activity and after call the callback method.");
+    }
+}
+```
+
+Finally, here's how we execute a task and receive a callback when it's finished.
+
+```java
+    var task=new SimpleTask();
+        task.executeWith(()->LOGGER.info("I'm done now."));
+```
+
+## Class diagram
+
+![Callback pattern class diagram](./etc/callback.png "Callback")
+
+## Applicability
+
+Use the Callback pattern when
+
+* Asynchronous event handling in GUI applications or event-driven systems
+* Implementing notification mechanisms where certain events need to trigger actions in other components.
+* Decoupling modules or components that need to interact without having a direct dependency on each other
+
+## Known uses
+
+* GUI frameworks often use callbacks for event handling, such as user interactions (clicks, key presses)
+* Node.js heavily relies on callbacks for non-blocking I/O operations
+* Frameworks that deal with asynchronous operations, like Promises in JavaScript, use callbacks to handle the resolution or rejection of asynchronous tasks
+
+## Consequences
+
+Benefits:
+
+* Decouples the execution logic of an operation from the signaling or notification logic, enhancing modularity and reusability
+* Facilitates asynchronous processing, improving the responsiveness and scalability of applications
+* Enables a reactive programming model where components can react to events as they occur
+
+Trade-offs:
+
+* Callback hell or pyramid of doom: Deeply nested callbacks can lead to code that is hard to read and maintain
+* Inversion of control can lead to harder-to-follow code flow, making debugging more challenging
+* Potential issues with error handling, especially in languages or environments where exceptions are used, as errors might need to be propagated through callbacks
+
+## Related patterns
+
+* [Observer](https://java-design-patterns.com/patterns/observer/): Callbacks can be seen as a more dynamic and lightweight form of the Observer pattern, with the ability to subscribe and unsubscribe callback functions dynamically
+* [Command](https://java-design-patterns.com/patterns/command/): Callbacks can be implemented as Command objects in scenarios where more flexibility or statefulness is required in the callback operation
+* [Promise](https://java-design-patterns.com/patterns/promise/): In some languages or frameworks, Promises or Futures can be used to handle asynchronous operations more cleanly, often using callbacks for success or failure cases
+
+## Real world examples
+
+* [CyclicBarrier](http://docs.oracle.com/javase/7/docs/api/java/util/concurrent/CyclicBarrier.html#CyclicBarrier%28int,%20java.lang.Runnable%29) constructor can accept a callback that will be triggered every time a barrier is tripped.
+* [JavaScript: The Good Parts](https://amzn.to/3TiQV61)
+* [Node.js Design Patterns - Third edition: Design and implement production-grade Node.js applications using proven patterns and techniques](https://amzn.to/3VssjKG)

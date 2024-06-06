@@ -1,24 +1,123 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Collection Pipeline
+category: Functional
+language: en
+tag:
+    - Reactive
+    - Data processing
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Intent
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+The Collection Pipeline design pattern is intended to process collections of data by chaining together operations in a sequence where the output of one operation is the input for the next. It promotes a declarative approach to handling collections, focusing on what should be done rather than how.
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Explanation
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+Real-world example
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+> Imagine you're in a large library filled with books, and you're tasked with finding all the science fiction books published after 2000, then arranging them by author name in alphabetical order, and finally picking out the top 5 based on their popularity or ratings.
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+In plain words
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> The Collection Pipeline pattern involves processing data by passing it through a series of operations, each transforming the data in sequence, much like an assembly line in a factory.
+
+Wikipedia says
+
+> In software engineering, a pipeline consists of a chain of processing elements (processes, threads, coroutines, functions, etc.), arranged so that the output of each element is the input of the next; the name is by analogy to a physical pipeline. Usually some amount of buffering is provided between consecutive elements. The information that flows in these pipelines is often a stream of records, bytes, or bits, and the elements of a pipeline may be called filters; this is also called the pipe(s) and filters design pattern. Connecting elements into a pipeline is analogous to function composition.
+
+**Programmatic Example**
+
+The Collection Pipeline pattern is implemented in this code example by using Java's Stream API to perform a series of transformations on a collection of Car objects. The transformations are chained together to form a pipeline. Here's a breakdown of how it's done:
+
+1. Creation of Cars: A list of Car objects is created using the `CarFactory.createCars()` method.
+
+`var cars = CarFactory.createCars();`
+
+2. Filtering and Transforming: The `FunctionalProgramming.getModelsAfter2000(cars)` method filters the cars to only include those made after the year 2000, and then transforms the filtered cars into a list of their model names.
+
+`var modelsFunctional = FunctionalProgramming.getModelsAfter2000(cars);`
+
+In the `getModelsAfter2000` method, the pipeline is created as follows:
+
+```java
+public static List<String> getModelsAfter2000(List<Car> cars){
+        return cars.stream().filter(car->car.getYear()>2000)
+        .sorted(comparing(Car::getYear))
+        .map(Car::getModel)
+        .collect(toList());
+        }
+```
+
+3. Grouping: The `FunctionalProgramming.getGroupingOfCarsByCategory(cars)` method groups the cars by their category.
+
+`var groupingByCategoryFunctional = FunctionalProgramming.getGroupingOfCarsByCategory(cars);`
+
+In the getGroupingOfCarsByCategory method, the pipeline is created as follows:
+
+```java
+public static Map<Category, List<Car>>getGroupingOfCarsByCategory(List<Car> cars){
+        return cars.stream().collect(groupingBy(Car::getCategory));
+        }
+```
+
+4. Filtering, Sorting and Transforming: The `FunctionalProgramming.getSedanCarsOwnedSortedByDate(List.of(john))` method filters the cars owned by a person to only include sedans, sorts them by date, and then transforms the sorted cars into a list of Car objects.
+
+`var sedansOwnedFunctional = FunctionalProgramming.getSedanCarsOwnedSortedByDate(List.of(john));`
+
+In the `getSedanCarsOwnedSortedByDate` method, the pipeline is created as follows:
+
+```java
+public static List<Car> getSedanCarsOwnedSortedByDate(List<Person> persons){
+        return persons.stream().flatMap(person->person.getCars().stream())
+        .filter(car->Category.SEDAN.equals(car.getCategory()))
+        .sorted(comparing(Car::getDate))
+        .collect(toList());
+        }
+```
+
+In each of these methods, the Collection Pipeline pattern is used to perform a series of operations on the collection of cars in a declarative manner, which improves readability and maintainability.
+
+## Class diagram
+
+![alt text](./etc/collection-pipeline.png "Collection Pipeline")
+
+## Applicability
+
+This pattern is applicable in scenarios involving bulk data operations such as filtering, mapping, sorting, or reducing collections. It's particularly useful in data analysis, transformation tasks, and where a sequence of operations needs to be applied to each element of a collection.
+
+## Known Uses
+
+* LINQ in .NET
+* Stream API in Java 8+
+* Collections in modern functional languages (e.g., Haskell, Scala)
+* Database query builders and ORM frameworks
+
+## Consequences
+
+Benefits:
+
+* Readability: The code is more readable and declarative, making it easier to understand the sequence of operations.
+* Maintainability: Easier to modify or extend the pipeline with additional operations.
+* Reusability: Common operations can be abstracted into reusable functions.
+* Lazy Evaluation: Some implementations allow for operations to be lazily evaluated, improving performance.
+
+Trade-offs:
+
+* Performance Overhead: Chaining multiple operations can introduce overhead compared to traditional loops, especially for short pipelines or very large collections.
+* Debugging Difficulty: Debugging a chain of operations might be more challenging due to the lack of intermediate variables.
+* Limited to Collections: Primarily focused on collections, and its utility might be limited outside of collection processing.
+
+## Related Patterns
+
+* [Builder](https://java-design-patterns.com/patterns/builder/): Similar fluent interface style but used for object construction.
+* [Chain of Responsibility](https://java-design-patterns.com/patterns/chain-of-responsibility/): Conceptually similar in chaining handlers, but applied to object requests rather than data collection processing.
+* [Strategy](https://java-design-patterns.com/patterns/strategy/): Can be used within a pipeline stage to encapsulate different algorithms that can be selected at runtime.
+
+## Credits
+
+* [Function composition and the Collection Pipeline pattern](https://www.ibm.com/developerworks/library/j-java8idioms2/index.html)
+* [Collection Pipeline described by Martin Fowler](https://martinfowler.com/articles/collection-pipeline/)
+* [Java8 Streams](https://docs.oracle.com/javase/8/docs/api/java/util/stream/package-summary.html)
+* [Refactoring: Improving the Design of Existing Code](https://amzn.to/3VDMWDO)
+* [Functional Programming in Scala](https://amzn.to/4cEo6K2)
+* [Java 8 in Action: Lambdas, Streams, and functional-style programming](https://amzn.to/3THp4wy)

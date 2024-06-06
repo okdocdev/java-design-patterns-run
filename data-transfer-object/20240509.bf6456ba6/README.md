@@ -1,24 +1,127 @@
-# About  > 20240509-113340.bf6456ba6
-Content of source code folder: 20240509-113340.bf6456ba6 comes from project: [java-design-patterns](https://github.com/iluwatar/java-design-patterns) (20240509 bf6456ba6), path: java-design-patterns/
+---
+title: Data Transfer Object
+category: Structural
+language: en
+tag:
+    - Client-server
+    - Data transfer
+    - Layered architecture
+    - Optimization
+---
 
-You can view its code flow in a debugging process at [okdoc.dev](https://okdoc.dev/p/JDP@20240509:/index.html), here is a screenshot:
-![okdoc.dev:JDP@20240509:](screenshot.okdoc.dev.jpg)
+## Also known as
 
-# About okdoc.dev
-As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
-随着软件的开源现象越来越普遍，开源软件已无处不在，起初程序员们从头开发软件的现象越来越少见，而基于日益丰富的开源软件来构建新的软件的活动越发普遍。
+* Transfer Object
+* Value Object
 
-Therefore, understanding the source code of existing open-source projects is becoming increasingly important, and the proportion of developers' work time spent reading source code is also increasing.<br>
-因此，理解现有的开源工程的源码越来越重要，而阅读源码的时间占开发者的工作时间的比例也越来越大。
+## Intent
 
-Developers usually understand the source code through static methods such as directly reading the code or referring to documentation and version commit records. This is often very time-consuming and tedious. This site provides a new solution to this problem, which is to present the complete dynamic running process of the software in the view of a debugger, hoping to significantly improve or facilitate developers' understanding of the software's running process and source code implementation efficiency.<br>
-开发者们通常采用直接阅读代码或参考文档和版本提交记录等静态方式理解软件的源码，这通常非常耗时并且枯燥。本站针对此问题有新的解决方案，那就是以调试程序的视图来将软件的完整运行流程展示出来，希望能大幅提升或促进开发者们理解软件的运行过程和源码实现的效率。
+The Data Transfer Object (DTO) pattern is used to transfer data between software application subsystems or layers, particularly in the context of network calls or database retrieval in Java applications. It reduces the number of method calls by aggregating the data in a single transfer.
 
-This site allows developers to view the entire process and details of the program's operation directly in the view of a dynamic debugger without the need to set up a development and running environment. This helps developers understand the software and read the source code from a dynamic perspective, effectively supplementing other static code reading activities.<br>
-本站让开发者们无需搭建开发环境和运行环境，即能直接以动态调试器的视图来浏览程序的运行全过程和细节，帮助开发者们以动态的视角来理解软件和阅读源码，是其它静态代码阅读活动的有效补充。
+## Explanation
 
-If you are also a developer, this site will continuously bring you more debugging views of open-source software, helping you quickly understand complex codes.<br>
-如果您也是开发者，本站将会不断地给您带来更多开源软件的调试全程视图，助您快速理解复杂代码。
+Real world example
 
-Just try this [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) !<br>
-快来看看这个 [demo](https://okdoc.dev/p/javaTestDemo@20240523:main/index.html) ！
+> Imagine you're at a grocery store with a long shopping list. Instead of calling a friend from every aisle to ask what's needed, you compile the entire list into one message and send it over. This is akin to a Data Transfer Object (DTO) in software, where instead of making multiple requests for data, a single, compiled set of data (like the complete shopping list) is transferred in one go, optimizing communication and efficiency.
+
+In plain words
+
+> Using DTO relevant information can be fetched with a single backend query. 
+
+Wikipedia says
+
+> In the field of programming a data transfer object (DTO) is an object that carries data between processes. The motivation for its use is that communication between processes is usually done resorting to remote interfaces (e.g. web services), where each call is an expensive operation. Because the majority of the cost of each call is related to the round-trip time between the client and the server, one way of reducing the number of calls is to use an object (the DTO) that aggregates the data that would have been transferred by the several calls, but that is served by one call only.
+
+**Programmatic Example**
+
+Let's first introduce our simple `CustomerDTO` record.
+
+```java
+public record CustomerDto(String id, String firstName, String lastName) {}
+```
+
+`CustomerResource` record acts as the server for customer information.
+
+```java
+public record CustomerResource(List<CustomerDto> customers) {
+
+    public void save(CustomerDto customer) {
+        customers.add(customer);
+    }
+    
+    public void delete(String customerId) {
+        customers.removeIf(customer -> customer.id().equals(customerId));
+    }
+}
+```
+
+Now fetching customer information is easy since we have the DTOs.
+
+```java
+var customerOne = new CustomerDto("1", "Kelly", "Brown");
+var customerTwo = new CustomerDto("2", "Alfonso", "Bass");
+var customers = new ArrayList<>(List.of(customerOne, customerTwo));
+var customerResource = new CustomerResource(customers);
+LOGGER.info("All customers:");
+var allCustomers = customerResource.getCustomers();
+printCustomerDetails(allCustomers);
+```
+
+The output will be:
+
+```
+18:31:53.868 [main] INFO com.iluwatar.datatransfer.App -- All customers:
+18:31:53.870 [main] INFO com.iluwatar.datatransfer.App -- Kelly
+18:31:53.870 [main] INFO com.iluwatar.datatransfer.App -- Alfonso
+```
+
+## Class diagram
+
+![DTO class diagram](./etc/data-transfer-object.urm.png "data-transfer-object")
+
+## Applicability
+
+Use the Data Transfer Object pattern when:
+
+* When you need to optimize network traffic by reducing the number of calls, especially in a client-server architecture.
+* In scenarios where batch processing of data is preferred over individual processing.
+* When working with remote interfaces, to encapsulate the data transfer in a serializable object that can be easily transmitted.
+
+## Tutorials
+
+* [Data Transfer Object Pattern in Java - Implementation and Mapping](https://stackabuse.com/data-transfer-object-pattern-in-java-implementation-and-mapping/)
+* [The DTO Pattern (Data Transfer Object)](https://www.baeldung.com/java-dto-pattern)
+
+## Known Uses
+
+* Remote Method Invocation (RMI) in Java, where DTOs are used to pass data across network.
+* Enterprise JavaBeans (EJB), particularly when data needs to be transferred from EJBs to clients.
+* Various web service frameworks where DTOs encapsulate request and response data.
+
+## Consequences
+
+Benefits:
+
+* Reduces network calls, thereby improving application performance.
+* Decouples the client from the server, leading to more modular and maintainable code.
+* Simplifies data transmission over the network by aggregating data into single objects.
+
+Trade-offs:
+
+* Introduces additional classes into the application, which may increase complexity.
+* Can lead to redundant data structures that mirror domain models, potentially causing synchronization issues.
+* May encourage design that leads to an anemic domain model, where business logic is separated from data.
+
+## Related Patterns
+
+* [Service Layer](https://java-design-patterns.com/patterns/service-layer/): Often involves using DTOs to transfer data across the boundary between the service layer and its clients.
+* [Facade](https://java-design-patterns.com/patterns/facade/): Similar to DTO, a Facade may aggregate multiple calls into one, improving efficiency.
+* [Composite Entity](https://java-design-patterns.com/patterns/composite-entity/): DTOs may be used to represent composite entities, particularly in persistence mechanisms.
+
+## Credits
+
+* [Design Pattern - Transfer Object Pattern](https://www.tutorialspoint.com/design_pattern/transfer_object_pattern.htm)
+* [Data Transfer Object](https://msdn.microsoft.com/en-us/library/ff649585.aspx)
+* [J2EE Design Patterns](https://www.amazon.com/gp/product/0596004273/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0596004273&linkCode=as2&tag=javadesignpat-20&linkId=f27d2644fbe5026ea448791a8ad09c94)
+* [Patterns of Enterprise Application Architecture](https://www.amazon.com/gp/product/0321127420/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0321127420&linkCode=as2&tag=javadesignpat-20&linkId=014237a67c9d46f384b35e10151956bd)
+* [Core J2EE Patterns: Best Practices and Design Strategies](https://amzn.to/4cKndQp)
