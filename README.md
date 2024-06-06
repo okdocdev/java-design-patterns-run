@@ -1,8 +1,8 @@
 # About java-design-patterns-run
-<b>java-design-patterns-run</b> is the runtime view of [java-design-patterns](https://github.com/iluwatar/java-design-patterns): you can view a design pattern's code flow in its debugging process at [okdoc.dev](https://okdoc.dev/en/index.html#JavaDesignPatterns), here is a screenshot of the [reader-writer-lock](https://github.com/okdocdev/java-design-patterns-run/reader-writer-lock/) design pattern:
+<b>java-design-patterns-run</b> is the collection of runtime views of java design patterns from [java-design-patterns](https://github.com/iluwatar/java-design-patterns): you can view a java design pattern's runtime code flow of one of its debugging process in HTML pages (one dubugging step per page and each dubugging step is available) at [okdoc.dev](https://okdoc.dev/en/index.html#JavaDesignPatterns), here is a screenshot of one of the HTML pages of the [reader-writer-lock](https://github.com/okdocdev/java-design-patterns-run/reader-writer-lock/) design pattern:
 ![okdoc.dev:JDP@20240509:reader-writer-lock](screenshot.okdoc.dev.jpg)
 
-And the complete code flow of [reader-writer-lock](https://github.com/okdocdev/java-design-patterns-run/reader-writer-lock/) is [here](https://okdoc.dev/p/JDP@20240509:reader-writer-lock/).
+The complete code flow of [reader-writer-lock](https://github.com/okdocdev/java-design-patterns-run/reader-writer-lock/) starts [here](https://okdoc.dev/p/JDP@20240509:reader-writer-lock/), just enjoy it:)
 
 # About okdoc.dev
 As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
