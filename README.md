@@ -1,6 +1,6 @@
 # About java-design-patterns-run
-<b>java-design-patterns-run</b> is the runtime view of java-design-patterns: you can view a design pattern's code flow in its debugging process at [okdoc.dev](https://okdoc.dev/en/index.html#JavaDesignPatterns), here is a demo screenshot:
-![JDP@20240509:reader-writer-lock](reader-writer-lock.screenshot.okdoc.dev.jpg)
+<b>java-design-patterns-run</b> is the runtime view of java-design-patterns: you can view a design pattern's code flow in its debugging process at [okdoc.dev](https://okdoc.dev/en/index.html#JavaDesignPatterns), here is a demo (reader-writer-lock) screenshot:
+![okdoc.dev:JDP@20240509:reader-writer-lock](screenshot.okdoc.dev.jpg)
 
 # About okdoc.dev
 As the phenomenon of open-source software becomes more prevalent, open-source software is now ubiquitous. Initially, it was common for programmers to develop software from scratch, but now it is more common to build new software based on an increasing amount of rich open-source software.<br>
